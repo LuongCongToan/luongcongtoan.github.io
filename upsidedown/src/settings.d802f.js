@@ -1,0 +1,1 @@
+window._CCSettings={platform:"web-mobile",groupList:["default","water"],collisionMatrix:[[true,true],[true,true]],hasResourcesBundle:false,hasStartSceneBundle:false,remoteBundles:[],subpackages:[],launchScene:"db://assets/scenes/main.fire",orientation:"",jsList:[],bundleVers:{internal:"6c0a3",main:"fc27b"}};

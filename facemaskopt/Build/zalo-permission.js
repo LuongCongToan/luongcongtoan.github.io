@@ -1,14 +1,17 @@
-import { checkZaloCameraPermission } from "zmp-sdk/apis";
+import api from "zmp-sdk";
 function toan_zaloCameraPermission() {
     
-    checkZaloCameraPermission({
-        success: function ({ userAllow }) {
-          if (userAllow) {
-          }
+    api.getPhoneNumber({
+        success: async function(data) {
+          // xử lý khi gọi api thành công
+          let { token, number } = data;
+          // xử lý cho trường hợp sử dụng phiên bản Zalo mới
+            window.alert("thanh cong");
         },
-        fail: function (err) {
-          console.log(err);
-        }
-    });
+        fail: function(error) {
+          // xử lý khi gọi api thất bại
+          window.alert("error ");
+        },
+      });
       
 }

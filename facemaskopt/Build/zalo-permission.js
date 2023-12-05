@@ -1,5 +1,8 @@
-function toan_zaloCameraPermission() {
-    
-   window.alert("toan_zaloCameraPermission");
-      
-}
+
+console.log('zalo-permission.js loaded');
+
+export const getAccessToken = () => {
+   
+  }
+  
+  

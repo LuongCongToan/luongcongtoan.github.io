@@ -577,6 +577,7 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 },{}],"l3OqJ":[function(require,module,exports) {
 var _apis = require("zmp-sdk/apis");
 window.checkCameraPermission = function _checkCameraPermission() {
+    console.log("checkCameraPermission ===========");
     (0, _apis.checkZaloCameraPermission)({
         success: ({ userAllow })=>{
             if (userAllow) // được phép sử dụng camera
@@ -585,7 +586,7 @@ window.checkCameraPermission = function _checkCameraPermission() {
         fail: (err)=>{
             // xử lý khi gọi api thất bại
             UnityInstance.SendMessage("ZaloCameraPermission", "OnCameraPermissionDenied");
-            console.log(err);
+            console.log("zalo: " + err);
         }
     });
 };

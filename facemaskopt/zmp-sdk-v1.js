@@ -578,17 +578,6 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 var _apis = require("zmp-sdk/apis");
 window.checkCameraPermission = function _checkCameraPermission() {
     console.log("checkCameraPermission ===========");
-    (0, _apis.checkZaloCameraPermission)({
-        success: ({ userAllow })=>{
-            if (userAllow) // được phép sử dụng camera
-            UnityInstance.SendMessage("ZaloCameraPermission", "OnCameraPermissionGranted");
-        },
-        fail: (err)=>{
-            // xử lý khi gọi api thất bại
-            UnityInstance.SendMessage("ZaloCameraPermission", "OnCameraPermissionDenied");
-            console.log("zalo: " + err);
-        }
-    });
 };
 window.requestZaloCameraPermission = function _requestCameraPermission() {
     requestCameraPermission({
@@ -793,7 +782,7 @@ var _checkZaloCameraPermissionJs = require("./apis/checkZaloCameraPermission.js"
 var _getUserIDJs = require("./apis/getUserID.js");
 (0, _loginJs.login)();
 
-},{"./apis/login.js":"4LaVI","./types/enum.js":false,"./apis/getAccessToken.js":false,"./apis/getVersion.js":false,"./apis/getSystemInfo.js":false,"./apis/setNavigationBarTitle.js":false,"./apis/setNavigationBarColor.js":false,"./apis/setNavigationBarLeftButton.js":false,"./apis/setStorage.js":false,"./apis/getStorage.js":false,"./apis/getStorageInfo.js":false,"./apis/removeStorage.js":false,"./apis/clearStorage.js":false,"./apis/getUserInfo.js":false,"./apis/getNetworkType.js":false,"./apis/onNetworkStatusChange.js":false,"./apis/startBeaconDiscovery.js":false,"./apis/stopBeaconDiscovery.js":false,"./apis/getBeacons.js":false,"./apis/closeApp.js":false,"./apis/scanQRCode.js":false,"./apis/openProfile.js":false,"./apis/openChat.js":false,"./apis/openPostFeed.js":false,"./apis/followOA.js":false,"./apis/unfollowOA.js":false,"./apis/openShareSheet.js":false,"./apis/requestCameraPermission.js":false,"./apis/createShortcut.js":false,"./apis/openBioAuthentication.js":false,"./apis/checkStateBioAuthentication.js":false,"./apis/showToast.js":false,"./apis/hideKeyboard.js":false,"./apis/openPhone.js":false,"./apis/openSMS.js":false,"./apis/viewOAQr.js":false,"./apis/keepScreen.js":false,"./apis/onKeepScreen.js":false,"./apis/offKeepScreen.js":false,"./apis/saveImageToGallery.js":false,"./apis/openMiniApp.js":false,"./apis/vibrate.js":false,"./apis/openWebview.js":false,"./apis/getRouteParams.js":false,"./apis/getAppInfo.js":"fmZ1f","./apis/sendDataToPreviousMiniApp.js":false,"./apis/getPhoneNumber.js":false,"./apis/openProfilePicker.js":false,"./apis/connectWifi.js":false,"./apis/openMediaPicker.js":false,"./apis/getShareableLink.js":false,"./apis/closeLoading.js":false,"./apis/requestUpdateZalo.js":false,"./apis/onConfirmToExit.js":false,"./apis/offConfirmToExit.js":false,"./apis/getDeviceId.js":false,"./apis/getDeviceIdAsync.js":false,"./apis/getContext.js":false,"./apis/getContextAsync.js":false,"./apis/getAuthCode.js":false,"./apis/getZPIToken.js":false,"./apis/setAccessToken.js":false,"./apis/openOutApp.js":false,"./apis/chooseImage.js":false,"./apis/getLocation.js":false,"./apis/onCallbackData.js":false,"./apis/createOrder.js":false,"./apis/checkTransaction.js":false,"./apis/events.js":false,"./apis/setAndroidBottomNavigationBar.js":false,"./apis/setIOSBottomSafeArea.js":false,"./apis/setStatusBar.js":false,"./apis/configAppView.js":false,"./apis/createOrderIAP.js":false,"./apis/minimizeApp.js":false,"./apis/openPermissionSetting.js":false,"./apis/favoriteApp.js":false,"./apis/openGroupList.js":false,"./apis/requestSendNotification.js":false,"./apis/addRating.js":false,"./apis/interactOA.js":false,"./apis/checkIsAllowedInteractWithOA.js":false,"./apis/getSetting.js":false,"./apis/authorize.js":false,"./apis/checkZaloCameraPermission.js":"8v5NK","./apis/getUserID.js":false,"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4LaVI":[function(require,module,exports) {
+},{"./apis/login.js":"4LaVI","./types/enum.js":false,"./apis/getAccessToken.js":false,"./apis/getVersion.js":false,"./apis/getSystemInfo.js":false,"./apis/setNavigationBarTitle.js":false,"./apis/setNavigationBarColor.js":false,"./apis/setNavigationBarLeftButton.js":false,"./apis/setStorage.js":false,"./apis/getStorage.js":false,"./apis/getStorageInfo.js":false,"./apis/removeStorage.js":false,"./apis/clearStorage.js":false,"./apis/getUserInfo.js":false,"./apis/getNetworkType.js":false,"./apis/onNetworkStatusChange.js":false,"./apis/startBeaconDiscovery.js":false,"./apis/stopBeaconDiscovery.js":false,"./apis/getBeacons.js":false,"./apis/closeApp.js":false,"./apis/scanQRCode.js":false,"./apis/openProfile.js":false,"./apis/openChat.js":false,"./apis/openPostFeed.js":false,"./apis/followOA.js":false,"./apis/unfollowOA.js":false,"./apis/openShareSheet.js":false,"./apis/requestCameraPermission.js":false,"./apis/createShortcut.js":false,"./apis/openBioAuthentication.js":false,"./apis/checkStateBioAuthentication.js":false,"./apis/showToast.js":false,"./apis/hideKeyboard.js":false,"./apis/openPhone.js":false,"./apis/openSMS.js":false,"./apis/viewOAQr.js":false,"./apis/keepScreen.js":false,"./apis/onKeepScreen.js":false,"./apis/offKeepScreen.js":false,"./apis/saveImageToGallery.js":false,"./apis/openMiniApp.js":false,"./apis/vibrate.js":false,"./apis/openWebview.js":false,"./apis/getRouteParams.js":false,"./apis/getAppInfo.js":"fmZ1f","./apis/sendDataToPreviousMiniApp.js":false,"./apis/getPhoneNumber.js":false,"./apis/openProfilePicker.js":false,"./apis/connectWifi.js":false,"./apis/openMediaPicker.js":false,"./apis/getShareableLink.js":false,"./apis/closeLoading.js":false,"./apis/requestUpdateZalo.js":false,"./apis/onConfirmToExit.js":false,"./apis/offConfirmToExit.js":false,"./apis/getDeviceId.js":false,"./apis/getDeviceIdAsync.js":false,"./apis/getContext.js":false,"./apis/getContextAsync.js":false,"./apis/getAuthCode.js":false,"./apis/getZPIToken.js":false,"./apis/setAccessToken.js":false,"./apis/openOutApp.js":false,"./apis/chooseImage.js":false,"./apis/getLocation.js":false,"./apis/onCallbackData.js":false,"./apis/createOrder.js":false,"./apis/checkTransaction.js":false,"./apis/events.js":false,"./apis/setAndroidBottomNavigationBar.js":false,"./apis/setIOSBottomSafeArea.js":false,"./apis/setStatusBar.js":false,"./apis/configAppView.js":false,"./apis/createOrderIAP.js":false,"./apis/minimizeApp.js":false,"./apis/openPermissionSetting.js":false,"./apis/favoriteApp.js":false,"./apis/openGroupList.js":false,"./apis/requestSendNotification.js":false,"./apis/addRating.js":false,"./apis/interactOA.js":false,"./apis/checkIsAllowedInteractWithOA.js":false,"./apis/getSetting.js":false,"./apis/authorize.js":false,"./apis/checkZaloCameraPermission.js":false,"./apis/getUserID.js":false,"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4LaVI":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "login", ()=>m);
@@ -6511,84 +6500,6 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "version", ()=>r);
 var r = "2.32.4";
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"8v5NK":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "checkZaloCameraPermission", ()=>t);
-var _asyncToGeneratorMjsJs = require("./../external/@swc/helpers/src/_async_to_generator.mjs.js");
-var _asyncToGeneratorMjsJsDefault = parcelHelpers.interopDefault(_asyncToGeneratorMjsJs);
-var _decoratorJs = require("../utils/decorator.js");
-var _checkZaloCameraPermissionJs = require("../common/apis/general/checkZaloCameraPermission.js");
-var _checkZaloCameraPermissionJsDefault = parcelHelpers.interopDefault(_checkZaloCameraPermissionJs);
-var _tslibEs6Js = require("./../external/tslib/tslib.es6.js");
-function t(t) {
-    return (0, _decoratorJs.functionHandler)("checkZaloCameraPermission", [], [
-        t
-    ], (0, _asyncToGeneratorMjsJsDefault.default)(function() {
-        return (0, _tslibEs6Js.__generator)(this, function(r) {
-            switch(r.label){
-                case 0:
-                    return [
-                        4,
-                        (0, _checkZaloCameraPermissionJsDefault.default)()
-                    ];
-                case 1:
-                    return [
-                        2,
-                        r.sent()
-                    ];
-            }
-        });
-    }));
-}
-
-},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../utils/decorator.js":"6mOw4","../common/apis/general/checkZaloCameraPermission.js":"ibgXI","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ibgXI":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "default", ()=>s);
-var _asyncToGeneratorMjsJs = require("./../../../external/@swc/helpers/src/_async_to_generator.mjs.js");
-var _asyncToGeneratorMjsJsDefault = parcelHelpers.interopDefault(_asyncToGeneratorMjsJs);
-var _lodashJs = require("../../../utils/lodash.js");
-var _lodashJsDefault = parcelHelpers.interopDefault(_lodashJs);
-var _responseJs = require("../../../utils/response.js");
-var _tslibEs6Js = require("./../../../external/tslib/tslib.es6.js");
-var s = (0, _asyncToGeneratorMjsJsDefault.default)(function() {
-    return (0, _tslibEs6Js.__generator)(this, function(s) {
-        var o;
-        return [
-            2,
-            new Promise((o = (0, _asyncToGeneratorMjsJsDefault.default)(function(r, s) {
-                var o;
-                return (0, _tslibEs6Js.__generator)(this, function(n) {
-                    switch(n.label){
-                        case 0:
-                            return (0, _lodashJsDefault.default).isUndefined(ZaloJavaScriptInterface) || "function" != typeof ZaloJavaScriptInterface.checkCameraPermission ? [
-                                3,
-                                2
-                            ] : [
-                                4,
-                                ZaloJavaScriptInterface.checkCameraPermission()
-                            ];
-                        case 1:
-                            return o = n.sent(), [
-                                2,
-                                r({
-                                    userAllow: "grant" === o
-                                })
-                            ];
-                        case 2:
-                            return s((0, _responseJs.apiResponse).error.clientNotSupport()), [
-                                2
-                            ];
-                    }
-                });
-            }), function(r, e) {
-                return o.apply(this, arguments);
-            }))
-        ];
-    });
-});
-
-},{"./../../../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../../../utils/lodash.js":"28xEQ","../../../utils/response.js":"4HKAY","./../../../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["3way1","l3OqJ"], "l3OqJ", "parcelRequire6eab")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["3way1","l3OqJ"], "l3OqJ", "parcelRequire6eab")
 
 //# sourceMappingURL=index.87e97a78.js.map

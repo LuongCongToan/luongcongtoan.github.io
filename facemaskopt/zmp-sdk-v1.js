@@ -604,7 +604,16 @@ window.ZaloRequestCameraPermission = function _ZaloRequestZaloCameraPermission()
 };
 window.ZaloGetAppInfo = function _ZaloGetAppInfo() {
     console.log("getZaloApplication ===========");
-    
+    (0, _apis.getAppInfo)({
+        success: (data)=>{
+            // xử lý khi gọi api thành công
+            const { name, version } = data;
+        },
+        fail: (error)=>{
+            // xử lý khi gọi api thất bại
+            console.log(error);
+        }
+    });
 };
 window.ZaloGetUserInfo = function _ZaloGetUserInfo() {
     console.log("ZaloGetUserInfo ===========");
@@ -623,7 +632,9 @@ window.ZaloGetUserInfo = function _ZaloGetUserInfo() {
 };
 window.ZaloGetAccessToken = function _ZaloGetAccessToken() {
     console.log("ZaloGetAccessToken ===========");
-    window.unityInstance.SendMessage('ZaloAPI', 'OnUserInfoDataResult', 'true');
+    var accessToken = 'accessToken';
+    window.unityInstance.SendMessage("ZaloAPI", "OnUserInfoPermissionGranted", accessToken);
+    
 };
 
 },{"zmp-sdk/apis":"7TMXe"}],"7TMXe":[function(require,module,exports) {

@@ -576,42 +576,54 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 
 },{}],"l3OqJ":[function(require,module,exports) {
 var _apis = require("zmp-sdk/apis");
-window.checkCameraPermission = function _checkCameraPermission() {
+window.ZaloCheckCameraPermission = function _ZaloCheckCameraPermission() {
     console.log("checkCameraPermission ===========");
     (0, _apis.checkZaloCameraPermission)({
         success: ({ userAllow })=>{
-            if (userAllow) // được phép sử dụng camera
-            UnityInstance.SendMessage("ZaloCameraPermission", "OnCameraPermissionGranted");
+            if (userAllow) {
+                console.log("zalo: userAllow");
+                window.unityInstance.SendMessage("ZaloAPI", "OnCameraPermissionGranted");
+            }
         },
         fail: (err)=>{
-            // xử lý khi gọi api thất bại
-            UnityInstance.SendMessage("ZaloCameraPermission", "OnCameraPermissionDenied");
+            window.unityInstance.SendMessage("ZaloAPI", "OnCameraPermissionDenied");
             console.log("zalo: " + err);
         }
     });
 };
-window.requestZaloCameraPermission = function _requestCameraPermission() {
-    (0, _apis.requestCameraPermission)({
+window.ZaloRequestCameraPermission = function _ZaloRequestZaloCameraPermission() {
+    requestCameraPermission({
         success: ({ userAllow, message })=>{
-            if (userAllow) console.log("camera permission granted");
+            if (userAllow) window.unityInstance.SendMessage("ZaloAPI", "OnCameraPermissionGranted");
         },
         fail: (err)=>{
+            window.unityInstance.SendMessage("ZaloAPI", "OnCameraPermissionDenied");
             console.log(err);
         }
     });
 };
-window.getAppInfo = function getZaloApplication() {
+window.ZaloGetAppInfo = function _ZaloGetAppInfo() {
     console.log("getZaloApplication ===========");
-    (0, _apis.getAppInfo)({
+    
+};
+window.ZaloGetUserInfo = function _ZaloGetUserInfo() {
+    console.log("ZaloGetUserInfo ===========");
+    (0, _apis.getUserInfo)({
         success: (data)=>{
-            // xử lý khi gọi api thành công
-            const { name, version } = data;
+            // Handle successful user info retrieval
+            const { userInfo } = data;
+            window.unityInstance.SendMessage("ZaloAPI", "OnUserInfoDataResult", true, userInfo);
         },
         fail: (error)=>{
-            // xử lý khi gọi api thất bại
+            // Handle failure
+            window.unityInstance.SendMessage("ZaloAPI", "OnUserInfoDataResult", false, error);
             console.log(error);
         }
     });
+};
+window.ZaloGetAccessToken = function _ZaloGetAccessToken() {
+    console.log("ZaloGetAccessToken ===========");
+    window.unityInstance.SendMessage('ZaloAPI', 'OnUserInfoDataResult', 'true');
 };
 
 },{"zmp-sdk/apis":"7TMXe"}],"7TMXe":[function(require,module,exports) {
@@ -793,7 +805,7 @@ var _checkZaloCameraPermissionJs = require("./apis/checkZaloCameraPermission.js"
 var _getUserIDJs = require("./apis/getUserID.js");
 (0, _loginJs.login)();
 
-},{"./apis/login.js":"4LaVI","./types/enum.js":false,"./apis/getAccessToken.js":false,"./apis/getVersion.js":false,"./apis/getSystemInfo.js":false,"./apis/setNavigationBarTitle.js":false,"./apis/setNavigationBarColor.js":false,"./apis/setNavigationBarLeftButton.js":false,"./apis/setStorage.js":false,"./apis/getStorage.js":false,"./apis/getStorageInfo.js":false,"./apis/removeStorage.js":false,"./apis/clearStorage.js":false,"./apis/getUserInfo.js":false,"./apis/getNetworkType.js":false,"./apis/onNetworkStatusChange.js":false,"./apis/startBeaconDiscovery.js":false,"./apis/stopBeaconDiscovery.js":false,"./apis/getBeacons.js":false,"./apis/closeApp.js":false,"./apis/scanQRCode.js":false,"./apis/openProfile.js":false,"./apis/openChat.js":false,"./apis/openPostFeed.js":false,"./apis/followOA.js":false,"./apis/unfollowOA.js":false,"./apis/openShareSheet.js":false,"./apis/requestCameraPermission.js":"knUsm","./apis/createShortcut.js":false,"./apis/openBioAuthentication.js":false,"./apis/checkStateBioAuthentication.js":false,"./apis/showToast.js":false,"./apis/hideKeyboard.js":false,"./apis/openPhone.js":false,"./apis/openSMS.js":false,"./apis/viewOAQr.js":false,"./apis/keepScreen.js":false,"./apis/onKeepScreen.js":false,"./apis/offKeepScreen.js":false,"./apis/saveImageToGallery.js":false,"./apis/openMiniApp.js":false,"./apis/vibrate.js":false,"./apis/openWebview.js":false,"./apis/getRouteParams.js":false,"./apis/getAppInfo.js":"fmZ1f","./apis/sendDataToPreviousMiniApp.js":false,"./apis/getPhoneNumber.js":false,"./apis/openProfilePicker.js":false,"./apis/connectWifi.js":false,"./apis/openMediaPicker.js":false,"./apis/getShareableLink.js":false,"./apis/closeLoading.js":false,"./apis/requestUpdateZalo.js":false,"./apis/onConfirmToExit.js":false,"./apis/offConfirmToExit.js":false,"./apis/getDeviceId.js":false,"./apis/getDeviceIdAsync.js":false,"./apis/getContext.js":false,"./apis/getContextAsync.js":false,"./apis/getAuthCode.js":false,"./apis/getZPIToken.js":false,"./apis/setAccessToken.js":false,"./apis/openOutApp.js":false,"./apis/chooseImage.js":false,"./apis/getLocation.js":false,"./apis/onCallbackData.js":false,"./apis/createOrder.js":false,"./apis/checkTransaction.js":false,"./apis/events.js":false,"./apis/setAndroidBottomNavigationBar.js":false,"./apis/setIOSBottomSafeArea.js":false,"./apis/setStatusBar.js":false,"./apis/configAppView.js":false,"./apis/createOrderIAP.js":false,"./apis/minimizeApp.js":false,"./apis/openPermissionSetting.js":false,"./apis/favoriteApp.js":false,"./apis/openGroupList.js":false,"./apis/requestSendNotification.js":false,"./apis/addRating.js":false,"./apis/interactOA.js":false,"./apis/checkIsAllowedInteractWithOA.js":false,"./apis/getSetting.js":false,"./apis/authorize.js":false,"./apis/checkZaloCameraPermission.js":"8v5NK","./apis/getUserID.js":false,"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4LaVI":[function(require,module,exports) {
+},{"./apis/login.js":"4LaVI","./types/enum.js":false,"./apis/getAccessToken.js":"9llkU","./apis/getVersion.js":false,"./apis/getSystemInfo.js":false,"./apis/setNavigationBarTitle.js":false,"./apis/setNavigationBarColor.js":false,"./apis/setNavigationBarLeftButton.js":false,"./apis/setStorage.js":false,"./apis/getStorage.js":false,"./apis/getStorageInfo.js":false,"./apis/removeStorage.js":false,"./apis/clearStorage.js":false,"./apis/getUserInfo.js":"dyHx8","./apis/getNetworkType.js":false,"./apis/onNetworkStatusChange.js":false,"./apis/startBeaconDiscovery.js":false,"./apis/stopBeaconDiscovery.js":false,"./apis/getBeacons.js":false,"./apis/closeApp.js":false,"./apis/scanQRCode.js":false,"./apis/openProfile.js":false,"./apis/openChat.js":false,"./apis/openPostFeed.js":false,"./apis/followOA.js":false,"./apis/unfollowOA.js":false,"./apis/openShareSheet.js":false,"./apis/requestCameraPermission.js":false,"./apis/createShortcut.js":false,"./apis/openBioAuthentication.js":false,"./apis/checkStateBioAuthentication.js":false,"./apis/showToast.js":false,"./apis/hideKeyboard.js":false,"./apis/openPhone.js":false,"./apis/openSMS.js":false,"./apis/viewOAQr.js":false,"./apis/keepScreen.js":false,"./apis/onKeepScreen.js":false,"./apis/offKeepScreen.js":false,"./apis/saveImageToGallery.js":false,"./apis/openMiniApp.js":false,"./apis/vibrate.js":false,"./apis/openWebview.js":false,"./apis/getRouteParams.js":false,"./apis/getAppInfo.js":"fmZ1f","./apis/sendDataToPreviousMiniApp.js":false,"./apis/getPhoneNumber.js":false,"./apis/openProfilePicker.js":false,"./apis/connectWifi.js":false,"./apis/openMediaPicker.js":false,"./apis/getShareableLink.js":false,"./apis/closeLoading.js":false,"./apis/requestUpdateZalo.js":false,"./apis/onConfirmToExit.js":false,"./apis/offConfirmToExit.js":false,"./apis/getDeviceId.js":false,"./apis/getDeviceIdAsync.js":false,"./apis/getContext.js":false,"./apis/getContextAsync.js":false,"./apis/getAuthCode.js":false,"./apis/getZPIToken.js":false,"./apis/setAccessToken.js":false,"./apis/openOutApp.js":false,"./apis/chooseImage.js":false,"./apis/getLocation.js":false,"./apis/onCallbackData.js":false,"./apis/createOrder.js":false,"./apis/checkTransaction.js":false,"./apis/events.js":false,"./apis/setAndroidBottomNavigationBar.js":false,"./apis/setIOSBottomSafeArea.js":false,"./apis/setStatusBar.js":false,"./apis/configAppView.js":false,"./apis/createOrderIAP.js":false,"./apis/minimizeApp.js":false,"./apis/openPermissionSetting.js":false,"./apis/favoriteApp.js":false,"./apis/openGroupList.js":false,"./apis/requestSendNotification.js":false,"./apis/addRating.js":false,"./apis/interactOA.js":false,"./apis/checkIsAllowedInteractWithOA.js":false,"./apis/getSetting.js":false,"./apis/authorize.js":false,"./apis/checkZaloCameraPermission.js":"8v5NK","./apis/getUserID.js":false,"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4LaVI":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "login", ()=>m);
@@ -6393,38 +6405,53 @@ function m() {
     })).apply(this, arguments);
 }
 
-},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../appEnv/index.js":"gwpxL","../common/notFound.js":"dqwdY","../utils/decorator.js":"6mOw4","../common/apis/general/getSetting.js":"hGZ1d","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"knUsm":[function(require,module,exports) {
+},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../appEnv/index.js":"gwpxL","../common/notFound.js":"dqwdY","../utils/decorator.js":"6mOw4","../common/apis/general/getSetting.js":"hGZ1d","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"9llkU":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "requestCameraPermission", ()=>n);
+parcelHelpers.export(exports, "getAccessToken", ()=>i);
 var _asyncToGeneratorMjsJs = require("./../external/@swc/helpers/src/_async_to_generator.mjs.js");
 var _asyncToGeneratorMjsJsDefault = parcelHelpers.interopDefault(_asyncToGeneratorMjsJs);
+var _indexJs = require("../appEnv/index.js");
+var _indexJsDefault = parcelHelpers.interopDefault(_indexJs);
+var _notFoundJs = require("../common/notFound.js");
+var _notFoundJsDefault = parcelHelpers.interopDefault(_notFoundJs);
 var _decoratorJs = require("../utils/decorator.js");
-var _requestCameraPermissionJs = require("../common/apis/general/requestCameraPermission.js");
-var _requestCameraPermissionJsDefault = parcelHelpers.interopDefault(_requestCameraPermissionJs);
+var _tokenJs = require("../common/token.js");
+var _tokenJsDefault = parcelHelpers.interopDefault(_tokenJs);
 var _tslibEs6Js = require("./../external/tslib/tslib.es6.js");
-function n(r) {
-    return o.apply(this, arguments);
+function i(e) {
+    return c.apply(this, arguments);
 }
-function o() {
-    return (o = (0, _asyncToGeneratorMjsJsDefault.default)(function(n) {
-        return (0, _tslibEs6Js.__generator)(this, function(o) {
+function c() {
+    return (c = (0, _asyncToGeneratorMjsJsDefault.default)(function(i) {
+        return (0, _tslibEs6Js.__generator)(this, function(c) {
             return [
                 2,
-                (0, _decoratorJs.functionHandler)("requestCameraPermission", [], [
-                    n
+                (0, _decoratorJs.functionHandler)("getAccessToken", [], [
+                    i
                 ], (0, _asyncToGeneratorMjsJsDefault.default)(function() {
-                    return (0, _tslibEs6Js.__generator)(this, function(r) {
-                        switch(r.label){
+                    return (0, _tslibEs6Js.__generator)(this, function(e) {
+                        switch(e.label){
                             case 0:
-                                return [
+                                return (0, _indexJsDefault.default).isMp ? [
                                     4,
-                                    (0, _requestCameraPermissionJsDefault.default)()
+                                    (0, _tokenJsDefault.default).getAccessToken()
+                                ] : [
+                                    3,
+                                    2
                                 ];
                             case 1:
                                 return [
                                     2,
-                                    r.sent()
+                                    e.sent() || ""
+                                ];
+                            case 2:
+                                return (0, _indexJsDefault.default).isMpWeb ? [
+                                    2,
+                                    Promise.resolve("")
+                                ] : [
+                                    2,
+                                    Promise.reject((0, _notFoundJsDefault.default)("getAccessToken", {}))
                                 ];
                         }
                     });
@@ -6434,49 +6461,153 @@ function o() {
     })).apply(this, arguments);
 }
 
-},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../utils/decorator.js":"6mOw4","../common/apis/general/requestCameraPermission.js":"25eoL","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"25eoL":[function(require,module,exports) {
+},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../appEnv/index.js":"gwpxL","../common/notFound.js":"dqwdY","../utils/decorator.js":"6mOw4","../common/token.js":"4rqJX","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"dyHx8":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "default", ()=>s);
+parcelHelpers.export(exports, "getUserInfo", ()=>p);
+var _asyncToGeneratorMjsJs = require("./../external/@swc/helpers/src/_async_to_generator.mjs.js");
+var _asyncToGeneratorMjsJsDefault = parcelHelpers.interopDefault(_asyncToGeneratorMjsJs);
+var _indexMjsJs = require("./../external/zod/lib/index.mjs.js");
+var _indexMjsJsDefault = parcelHelpers.interopDefault(_indexMjsJs);
+var _indexJs = require("../appEnv/index.js");
+var _indexJsDefault = parcelHelpers.interopDefault(_indexJs);
+var _notFoundJs = require("../common/notFound.js");
+var _notFoundJsDefault = parcelHelpers.interopDefault(_notFoundJs);
+var _decoratorJs = require("../utils/decorator.js");
+var _getUserInfoJs = require("../common/apis/general/getUserInfo.js");
+var _getUserInfoJsDefault = parcelHelpers.interopDefault(_getUserInfoJs);
+var _tslibEs6Js = require("./../external/tslib/tslib.es6.js");
+var m = [
+    (0, _indexMjsJs.object)({
+        avatarType: (0, _indexMjsJsDefault.default).enum([
+            "small",
+            "normal",
+            "large"
+        ]).optional()
+    }).optional()
+];
+function p(r) {
+    return u.apply(this, arguments);
+}
+function u() {
+    return u = (0, _asyncToGeneratorMjsJsDefault.default)(function(e) {
+        return (0, _tslibEs6Js.__generator)(this, function(o) {
+            var p;
+            return [
+                2,
+                (0, _decoratorJs.functionHandler)("getUserInfo", m, [
+                    e
+                ], (p = (0, _asyncToGeneratorMjsJsDefault.default)(function(r) {
+                    var e;
+                    return (0, _tslibEs6Js.__generator)(this, function(o) {
+                        switch(o.label){
+                            case 0:
+                                return (0, _indexJsDefault.default).isMp ? (e = null == r ? void 0 : r.avatarType, [
+                                    4,
+                                    (0, _getUserInfoJsDefault.default)(e)
+                                ]) : [
+                                    3,
+                                    2
+                                ];
+                            case 1:
+                                return [
+                                    2,
+                                    {
+                                        userInfo: o.sent()
+                                    }
+                                ];
+                            case 2:
+                                return (0, _indexJsDefault.default).isMpWeb ? [
+                                    2,
+                                    Promise.resolve({
+                                        userInfo: {
+                                            id: "3368637342326461234",
+                                            name: "User Name",
+                                            avatar: "https://h5.zdn.vn/static/images/avatar.png"
+                                        }
+                                    })
+                                ] : [
+                                    2,
+                                    Promise.reject((0, _notFoundJsDefault.default)("getUserInfo", {}))
+                                ];
+                        }
+                    });
+                }), function(r) {
+                    return p.apply(this, arguments);
+                }))
+            ];
+        });
+    }), u.apply(this, arguments);
+}
+
+},{"./../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","./../external/zod/lib/index.mjs.js":"cn5bg","../appEnv/index.js":"gwpxL","../common/notFound.js":"dqwdY","../utils/decorator.js":"6mOw4","../common/apis/general/getUserInfo.js":"KNTU1","./../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"KNTU1":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "default", ()=>r);
 var _asyncToGeneratorMjsJs = require("./../../../external/@swc/helpers/src/_async_to_generator.mjs.js");
 var _asyncToGeneratorMjsJsDefault = parcelHelpers.interopDefault(_asyncToGeneratorMjsJs);
-var _indexJs = require("../../call/index.js");
-var _indexJsDefault = parcelHelpers.interopDefault(_indexJs);
+var _tokenJs = require("../../token.js");
+var _tokenJsDefault = parcelHelpers.interopDefault(_tokenJs);
+var _constantsJs = require("../../../constants.js");
 var _tslibEs6Js = require("./../../../external/tslib/tslib.es6.js");
-var _getEnvJs = require("../../../appEnv/getEnv.js");
-var _getEnvJsDefault = parcelHelpers.interopDefault(_getEnvJs);
-var s = (0, _asyncToGeneratorMjsJsDefault.default)(function() {
-    return (0, _tslibEs6Js.__generator)(this, function(o) {
-        return [
-            2,
-            new Promise(function(o, r) {
-                (0, _indexJsDefault.default)("REQUEST_PERMISSION_CAMERA", {}, {
-                    success: function(e) {
-                        var r, s;
-                        (null === (r = (0, _getEnvJsDefault.default)()) || void 0 === r || null === (s = r.platform) || void 0 === s ? void 0 : s.isAndroid) ? o({
-                            userAllow: void 0 === e.error_code || (null == e ? void 0 : e.error_code) >= 0,
-                            message: void 0 === e.error_code ? "User allowed" : null == e ? void 0 : e.error_message
-                        }) : o({
-                            userAllow: (null == e ? void 0 : e.error_code) >= 0,
-                            message: null == e ? void 0 : e.error_message
+var i, r = (i = (0, _asyncToGeneratorMjsJsDefault.default)(function(i) {
+    var r, o;
+    return (0, _tslibEs6Js.__generator)(this, function(c) {
+        switch(c.label){
+            case 0:
+                return [
+                    4,
+                    (0, _tokenJsDefault.default).getAccessToken()
+                ];
+            case 1:
+                return r = c.sent(), o = "id,name,user_id_by_oa,is_sensitive", o = i ? "".concat(o, ",picture.type(").concat(i, ")") : "".concat(o, ",picture"), [
+                    4,
+                    fetch("".concat((0, _constantsJs.APIS).GET_USER_INFO, "?fields=").concat(o), {
+                        headers: {
+                            access_token: r || ""
+                        }
+                    }).then(function() {
+                        var t = (0, _asyncToGeneratorMjsJsDefault.default)(function(e) {
+                            var t, n, i, r;
+                            return (0, _tslibEs6Js.__generator)(this, function(s) {
+                                switch(s.label){
+                                    case 0:
+                                        return [
+                                            4,
+                                            e.json()
+                                        ];
+                                    case 1:
+                                        return i = s.sent(), r = null == i ? void 0 : i.user_id_by_oa, [
+                                            2,
+                                            {
+                                                id: null == i ? void 0 : i.id,
+                                                name: null == i ? void 0 : i.name,
+                                                avatar: null == i || null === (t = i.picture) || void 0 === t || null === (n = t.data) || void 0 === n ? void 0 : n.url,
+                                                idByOA: r,
+                                                followedOA: !!r,
+                                                isSensitive: null == i ? void 0 : i.is_sensitive
+                                            }
+                                        ];
+                                }
+                            });
                         });
-                    },
-                    fail: function(e) {
-                        var s, i;
-                        (null === (s = (0, _getEnvJsDefault.default)()) || void 0 === s || null === (i = s.platform) || void 0 === i ? void 0 : i.isAndroid) && "number" == typeof (null == e ? void 0 : e.code) ? o({
-                            userAllow: (null == e ? void 0 : e.code) >= 0,
-                            message: null == e ? void 0 : e.message
-                        }) : r(e);
-                    }
-                }, {
-                    isMultiCallback: !0
-                });
-            })
-        ];
+                        return function(e) {
+                            return t.apply(this, arguments);
+                        };
+                    }())
+                ];
+            case 2:
+                return [
+                    2,
+                    c.sent()
+                ];
+        }
     });
+}), function(e) {
+    return i.apply(this, arguments);
 });
 
-},{"./../../../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../../call/index.js":"kAALe","./../../../external/tslib/tslib.es6.js":"f0cFO","../../../appEnv/getEnv.js":"4G0wJ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fmZ1f":[function(require,module,exports) {
+},{"./../../../external/@swc/helpers/src/_async_to_generator.mjs.js":"lkTC2","../../token.js":"4rqJX","../../../constants.js":"fNy4G","./../../../external/tslib/tslib.es6.js":"f0cFO","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fmZ1f":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getAppInfo", ()=>i);

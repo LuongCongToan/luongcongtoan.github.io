@@ -23,6 +23,7 @@
         <div id="unity-build-title">Zl</div>
       </div>
     </div>
+
     <script>
 
       var container = document.querySelector("#unity-container");
@@ -32,6 +33,24 @@
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
 
+      
+      window.copyToClipboard = function copyToClipboard(strInput) {
+  // Select the text input
+
+  var tempInput = document.createElement("input");
+  tempInput.value = "===ss==ss=123==xyz";
+  document.body.appendChild(tempInput);
+  tempInput.select(0, tempInput.lenght);
+  try {
+      document.execCommand("copy");
+      console.log("Text copied to clipboard");
+  } catch (err) {
+      console.error("Unable to copy text to clipboard", err);
+  } finally {
+      document.body.removeChild(tempInput);
+  }    
+
+}
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
       // If type=='warning', a yellow highlight color is used.

@@ -139,9 +139,9 @@
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/Build.loader.js";
         const config = {
-            dataUrl: buildUrl + "/4de84ae76602a2ac640eb929b7b57aec.data.unityweb",
-            frameworkUrl: buildUrl + "/cfd995c3e370572063fac01aa36ae8d6.js.unityweb",
-            codeUrl: buildUrl + "/becb9841d8decfeb2a1254049e9e7cfd.wasm.unityweb",
+            dataUrl: buildUrl + "/Build.data.unityweb",
+            frameworkUrl: buildUrl + "/Build.framework.js.unityweb",
+            codeUrl: buildUrl + "/Build.wasm.unityweb",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "SpriteCool",
             productName: "Zl",
@@ -150,8 +150,8 @@
             cacheControl: function (url) {
             // typically includes: .data, .bundle, .zpt
             if (url.match(/\.data/) || url.match(/\.bundle/) || url.match(/\.zpt/)) {
-             return "immutable";
-}
+             return "must-revalidate";
+            }
    
             if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
                 return "immutable";

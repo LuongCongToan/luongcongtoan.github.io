@@ -132,16 +132,16 @@
             <div class="spinner"></div>
         </div>
     </div>
-    <script type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.1.7/zappar-cv.js"></script>
+    <script crossorigin="anonymous" type="text/javascript" src="https://libs.zappar.com/zappar-cv/2.1.7/zappar-cv.js"></script>
     <script>
         var db = indexedDB.open("dummy_indexdb", 1); // iOS 14.6 fix; the call to open indexdb hangs forever otherwise
 
         const buildUrl = "Build";
         const loaderUrl = buildUrl + "/Build.loader.js";
         const config = {
-            dataUrl: buildUrl + "/Build.data.unityweb",
-            frameworkUrl: buildUrl + "/Build.framework.js.unityweb",
-            codeUrl: buildUrl + "/Build.wasm.unityweb",
+            dataUrl: buildUrl + "/f8c08fd8afddbcea1b141a8a558260c0.data.unityweb",
+            frameworkUrl: buildUrl + "/9241cd9347e834c46204cfbff6cdf704.js.unityweb",
+            codeUrl: buildUrl + "/a8666910be0e22a44a2f84266b65035a.wasm.unityweb",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "SpriteCool",
             productName: "Zl",
@@ -150,8 +150,8 @@
             cacheControl: function (url) {
             // typically includes: .data, .bundle, .zpt
             if (url.match(/\.data/) || url.match(/\.bundle/) || url.match(/\.zpt/)) {
-             return "must-revalidate";
-            }
+             return "immutable";
+}
    
             if (url.match(/\.mp4/) || url.match(/\.custom/) || url.match(/\.zbin/)) {
                 return "immutable";

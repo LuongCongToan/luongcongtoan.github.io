@@ -1,0 +1,9 @@
+{
+  "name": "applaydu-webapp-kellogg",
+  "short_name": "applaydu-webapp-kellogg",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#231F20",
+  "theme_color": "#231F20"
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" data-orientation="landscape">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#231F20">
+    <title>applaydu-webapp-kellogg</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body style="background: #231F20">
+    <!-- app-shell goes fullscreen as a whole, so the overlays stay visible in fullscreen -->
+    <div id="app-shell">
+      <div id="app-root">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+        <div id="app-loading" class="app-overlay">
+          <div id="app-progress"><div id="app-progress-fill"></div></div>
+        </div>
+
+        <!-- Icon-only overlays, so the template needs no localization -->
+        <div id="app-rotate" class="app-overlay app-hidden" aria-label="Rotate your device">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <rect class="app-rotate-phone" x="22" y="8" width="20" height="36" rx="3"/>
+            <path class="app-rotate-arrow" d="M14 50 a22 22 0 0 0 36 0"/>
+            <path class="app-rotate-arrow-head" d="M50 50 l-7 -1 l4 -6 z"/>
+          </svg>
+        </div>
+
+        <button id="app-fullscreen-button" class="app-hidden" type="button" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM4 15h2v3h3v2H4zm14 3v-3h2v5h-5v-2z"/></svg>
+        </button>
+
+        <div id="app-error" class="app-overlay app-hidden"></div>
+      </div>
+    </div>
+
+    <!-- Outside app-shell: it's part of the scrolling page, so swiping it hides the browser toolbars (iPhone) -->
+    <div id="app-swipe" class="app-hidden" aria-label="Swipe up for fullscreen">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 54 V12"/>
+        <path d="M20 24 L32 12 L44 24"/>
+        <path d="M20 40 L32 28 L44 40"/>
+      </svg>
+    </div>
+
+    <script src="TemplateData/webapp.js"></script>
+    <script>
+      var buildUrl = "Build";
+      ApplayduWebApp.boot(buildUrl + "/d20a572b2df76f0dd73b57ff3b9fb16e.loader.js", {
+        arguments: [],
+        dataUrl: buildUrl + "/e56fc73399e675f02becce4142223769.data.gz",
+        frameworkUrl: buildUrl + "/e845250d3689bde710f331d57a9cbcfc.framework.js.gz",
+        codeUrl: buildUrl + "/7f7338ca3fb7c90ac86aa010313319c9.wasm.gz",
+        streamingAssetsUrl: "StreamingAssets",
+        fullscreenElementID: "app-shell",
+        companyName: "Kellogg",
+        productName: "applaydu-webapp-kellogg",
+        productVersion: "0.0.1",
+      });
+    </script>
+  </body>
+</html>

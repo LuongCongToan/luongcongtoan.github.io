@@ -1,0 +1,9 @@
+{
+  "name": "pt.team.pocketguardians",
+  "short_name": "pt.team.pocketguardians",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#231F20",
+  "theme_color": "#231F20"
+}

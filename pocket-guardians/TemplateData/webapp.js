@@ -49,7 +49,9 @@
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   var isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  var fullscreenSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  // Portals that wrap the game in their own page and fullscreen button, and forbid one in the game (CrazyGames)
+  var portalOwnsFullscreen = /(^|\.)(crazygames\.com|dev-crazygames\.be)$/i.test(location.hostname);
+  var fullscreenSupported = !portalOwnsFullscreen && !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   var landscapeQuery = window.matchMedia("(orientation: landscape)");
 
   var started = false;

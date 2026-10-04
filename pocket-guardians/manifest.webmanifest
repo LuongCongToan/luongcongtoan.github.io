@@ -1,6 +1,6 @@
 {
-  "name": "pt.team.pocketguardians",
-  "short_name": "pt.team.pocketguardians",
+  "name": "Pocket Guardians",
+  "short_name": "Pocket Guardians",
   "start_url": "index.html",
   "display": "fullscreen",
   "orientation": "portrait",

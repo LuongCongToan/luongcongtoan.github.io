@@ -1,9 +1,9 @@
 {
-    "product": "pt.team.pocketguardians",
-    "version": "0.1.0",
+    "product": "Pocket Guardians",
+    "version": "1.0.0",
     "branch": "dev",
-    "commit": "1ae395d",
+    "commit": "cde0690",
     "dirty": false,
-    "builtAt": "2026-10-04T03:13:49Z",
+    "builtAt": "2026-10-04T04:30:21Z",
     "unity": "6000.6.4f1"
 }

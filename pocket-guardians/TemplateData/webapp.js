@@ -8,6 +8,8 @@
 //   and audio stays muted by the browser until then.
 // - iOS mutes Web Audio (all of Unity's sound) while the ring/silent switch is set to silent, unless the page's audio
 //   session is "playback": set up front where Safari exposes it (17+), and by playing a silent <audio> on the first tap.
+// - Web Audio keeps playing in a hidden tab or a background window, so every AudioContext the game creates is suspended
+//   while the page is hidden or unfocused, and resumed when it comes back (or on the next tap, after an iOS interruption).
 // - screen.orientation.lock only works in fullscreen, and only on Android browsers.
 // - iPhone Safari has neither, so there the canvas fills the screen and a rotate overlay shows in the wrong orientation.
 (function () {
@@ -19,6 +21,8 @@
 
   // Render resolution cap: 3x phones cost a lot of GPU and memory for little visible gain
   var MAX_DEVICE_PIXEL_RATIO = 2;
+  // Lower on phones, where every pixel costs heat and battery and the screen is small
+  var MAX_MOBILE_DEVICE_PIXEL_RATIO = 1.5;
 
   // Must match WebScreen.cs
   var STATE_FULLSCREEN = 1;
@@ -53,6 +57,7 @@
   var lastFullscreenRequest = 0;
   var lastState = -1;
   var listeners = [];
+  var audioContexts = [];
 
   function isFullscreen() {
     return !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -155,7 +160,41 @@
     }
   }
 
+  function setAudioRunning(running) {
+    for (var i = 0; i < audioContexts.length; i++) {
+      var result = running ? audioContexts[i].resume() : audioContexts[i].suspend();
+      if (result && result.catch)
+        result.catch(function () {});
+    }
+  }
+
+  function pauseAudio() {
+    setAudioRunning(false);
+  }
+
+  function resumeAudio() {
+    if (!document.hidden)
+      setAudioRunning(true);
+  }
+
+  // Wraps the AudioContext constructors before Unity loads, to keep every context it creates
+  function trackAudioContexts() {
+    ["AudioContext", "webkitAudioContext"].forEach(function (name) {
+      var Native = window[name];
+      if (!Native)
+        return;
+      var Tracked = function (options) {
+        var context = options === undefined ? new Native() : new Native(options);
+        audioContexts.push(context);
+        return context;
+      };
+      Tracked.prototype = Native.prototype;
+      window[name] = Tracked;
+    });
+  }
+
   function onUserGesture() {
+    resumeAudio();
     if (!started) {
       started = true;
       unlockIosAudio();
@@ -188,7 +227,7 @@
   }
 
   function boot(loaderUrl, config) {
-    config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
+    config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, isMobile ? MAX_MOBILE_DEVICE_PIXEL_RATIO : MAX_DEVICE_PIXEL_RATIO);
     config.showBanner = showBanner;
 
     var script = document.createElement("script");
@@ -217,6 +256,8 @@
     // Unsupported value on this browser
   }
 
+  trackAudioContexts();
+
   // Capture phase, so it runs even if Unity stops the event on the canvas
   window.addEventListener("pointerup", onUserGesture, true);
   window.addEventListener("touchend", onUserGesture, true);
@@ -224,6 +265,16 @@
 
   document.addEventListener("fullscreenchange", onFullscreenChange);
   document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden)
+      pauseAudio();
+    else
+      resumeAudio();
+  });
+  window.addEventListener("blur", pauseAudio);
+  window.addEventListener("focus", resumeAudio);
+  window.addEventListener("pagehide", pauseAudio);
+  window.addEventListener("pageshow", resumeAudio);
   window.addEventListener("resize", update);
   if (landscapeQuery.addEventListener)
     landscapeQuery.addEventListener("change", update);

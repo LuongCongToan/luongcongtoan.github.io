@@ -2,8 +2,10 @@
     "product": "applaydu-webapp-kellogg",
     "version": "0.0.1",
     "branch": "feature/toan/starwars",
-    "commit": "f46a813",
+    "commit": "44a3870",
     "dirty": true,
-    "builtAt": "2026-10-02T02:11:30Z",
-    "unity": "6000.6.3f1"
+    "builtAt": "2026-10-05T14:02:27Z",
+    "unity": "6000.6.4f1",
+    "development": false,
+    "profiler": false
 }

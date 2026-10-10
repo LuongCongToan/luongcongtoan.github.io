@@ -1,7 +1,7 @@
-// Applaydu WebApp page shell: loading bar, fullscreen + orientation lock, rotate-your-device overlay.
+// WebCode page shell: loading bar, fullscreen + orientation lock, rotate-your-device overlay.
 // The game starts as soon as it has loaded; there's no tap-to-play screen.
-// Shared by all Applaydu templates; the game's orientation comes from <html data-orientation="landscape|portrait">.
-// Unity talks to it through window.ApplayduWebApp (see Runtime/Platform/WebScreen.jslib in the package).
+// Shared by all WebCode templates; the game's orientation comes from <html data-orientation="landscape|portrait">.
+// Unity talks to it through window.WebCode (see Runtime/Platform/WebScreen.jslib in the package).
 //
 // Browser limits this works around:
 // - Fullscreen and audio need a user gesture, so mobile goes fullscreen on the first tap (and again after the player leaves it),
@@ -309,7 +309,7 @@
       listeners.push(listener);
     },
   };
-  window.ApplayduWebApp = api;
+  window.WebCode = api;
 
   update();
 })();

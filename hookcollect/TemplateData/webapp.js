@@ -1,6 +1,6 @@
 // WebCode page shell: loading bar, fullscreen + orientation lock, rotate-your-device overlay.
 // The game starts as soon as it has loaded; there's no tap-to-play screen.
-// Shared by all WebCode templates; the game's orientation comes from <html data-orientation="landscape|portrait">.
+// Shared by all WebCode templates; the game's orientation comes from <html data-orientation="landscape|portrait|any">.
 // Unity talks to it through window.WebCode (see Runtime/Platform/WebScreen.jslib in the package).
 //
 // Browser limits this works around:
@@ -34,6 +34,8 @@
   var STATE_PORTRAIT_GAME = 64;
 
   var isPortraitGame = document.documentElement.getAttribute("data-orientation") === "portrait";
+  // "any": the game lays itself out for either orientation, so the page fills the window and nothing is locked or blocked
+  var isAnyOrientation = document.documentElement.getAttribute("data-orientation") === "any";
 
   // app-shell is what goes fullscreen; its child app-root holds the game (a centered column for portrait games on desktop)
   var shell = document.getElementById("app-shell");
@@ -66,7 +68,7 @@
   }
 
   function isRotateBlocked() {
-    return isMobile && landscapeQuery.matches === isPortraitGame;
+    return isMobile && !isAnyOrientation && landscapeQuery.matches === isPortraitGame;
   }
 
   function getState() {
@@ -92,7 +94,7 @@
   }
 
   function lockOrientation() {
-    if (screen.orientation && screen.orientation.lock)
+    if (!isAnyOrientation && screen.orientation && screen.orientation.lock)
       screen.orientation.lock(isPortraitGame ? "portrait" : "landscape").catch(function () {});
   }
 

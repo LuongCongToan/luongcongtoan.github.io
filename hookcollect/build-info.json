@@ -1,9 +1,9 @@
 {
     "product": "HookCollect",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "branch": "dev",
-    "commit": "67f94da",
+    "commit": "1bbdd44",
     "dirty": true,
-    "builtAt": "2026-10-10T06:44:47Z",
+    "builtAt": "2026-10-11T01:49:38Z",
     "unity": "6000.6.4f1"
 }

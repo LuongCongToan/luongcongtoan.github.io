@@ -1,0 +1,9 @@
+{
+  "name": "Match3 Defense",
+  "short_name": "Match3 Defense",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#231F20",
+  "theme_color": "#231F20"
+}

@@ -1,9 +1,9 @@
 {
-    "product": "Match3 Defense",
+    "product": "Siege Defense",
     "version": "0.1.0",
     "branch": "dev",
-    "commit": "d73a1da",
+    "commit": "3a7d34c",
     "dirty": true,
-    "builtAt": "2026-10-18T04:50:43Z",
+    "builtAt": "2026-10-18T11:45:26Z",
     "unity": "6000.6.4f1"
 }

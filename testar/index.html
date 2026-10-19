@@ -1,142 +1,66 @@
 <!DOCTYPE html>
-<html lang="en-us">
+<html lang="en" data-orientation="landscape">
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Zl</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#231F20">
+    <title>applaydu-webapp-kellogg</title>
+    <link rel="manifest" href="manifest.webmanifest">
     <link rel="stylesheet" href="TemplateData/style.css">
   </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
+  <body style="background: #231F20">
+    <!-- app-shell goes fullscreen as a whole, so the overlays stay visible in fullscreen -->
+    <div id="app-shell">
+      <div id="app-root">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+        <div id="app-loading" class="app-overlay">
+          <div id="app-progress"><div id="app-progress-fill"></div></div>
         </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">Zl</div>
+
+        <!-- Icon-only overlays, so the template needs no localization -->
+        <div id="app-rotate" class="app-overlay app-hidden" aria-label="Rotate your device">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <rect class="app-rotate-phone" x="22" y="8" width="20" height="36" rx="3"/>
+            <path class="app-rotate-arrow" d="M14 50 a22 22 0 0 0 36 0"/>
+            <path class="app-rotate-arrow-head" d="M50 50 l-7 -1 l4 -6 z"/>
+          </svg>
+        </div>
+
+        <button id="app-fullscreen-button" class="app-hidden" type="button" aria-label="Fullscreen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM4 15h2v3h3v2H4zm14 3v-3h2v5h-5v-2z"/></svg>
+        </button>
+
+        <div id="app-error" class="app-overlay app-hidden"></div>
       </div>
     </div>
 
+    <!-- Outside app-shell: it's part of the scrolling page, so swiping it hides the browser toolbars (iPhone) -->
+    <div id="app-swipe" class="app-hidden" aria-label="Swipe up for fullscreen">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 54 V12"/>
+        <path d="M20 24 L32 12 L44 24"/>
+        <path d="M20 40 L32 28 L44 40"/>
+      </svg>
+    </div>
+
+    <script src="TemplateData/webapp.js"></script>
     <script>
-
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var warningBanner = document.querySelector("#unity-warning");
-
-      
-      window.copyToClipboard = function copyToClipboard(strInput) {
-  // Select the text input
-
-  var tempInput = document.createElement("input");
-  tempInput.value = "===ss==ss=123==xyz";
-  document.body.appendChild(tempInput);
-  tempInput.select(0, tempInput.lenght);
-  try {
-      document.execCommand("copy");
-      console.log("Text copied to clipboard");
-  } catch (err) {
-      console.error("Unable to copy text to clipboard", err);
-  } finally {
-      document.body.removeChild(tempInput);
-  }    
-
-}
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
-        }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
-      }
-
       var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/Build.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/Build.data.unityweb",
-        frameworkUrl: buildUrl + "/Build.framework.js.unityweb",
-        codeUrl: buildUrl + "/Build.wasm.unityweb",
+      ApplayduWebApp.boot(buildUrl + "/0c6e3857cb01e5b0170cff4de09ddd1a.loader.js", {
+        arguments: [],
+        dataUrl: buildUrl + "/f5dad5b2eeb51966aa237268fb94456d.data",
+        frameworkUrl: buildUrl + "/d17e9e3429630063c2ec63cabb4924ab.framework.js",
+        codeUrl: buildUrl + "/d33c189c4cec02cfe1f889dbe80993ac.wasm",
         streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "Zl",
-        productVersion: "0.1",
-        showBanner: unityShowBanner,
-      };
-
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        container.className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
-      }
-
-      loadingBar.style.display = "block";
-
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                window.unityInstance = unityInstance;
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-              }).catch((message) => {
-                alert(message);
-              });
-            };
-
-      document.body.appendChild(script);
-
+        fullscreenElementID: "app-shell",
+        companyName: "Kellogg",
+        productName: "applaydu-webapp-kellogg",
+        productVersion: "0.0.1",
+      });
     </script>
   </body>
 </html>

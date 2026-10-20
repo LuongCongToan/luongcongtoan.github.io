@@ -7238,122 +7238,6 @@ async function createWasm() {
       PlanarCam.lastFrame = -1;
     }
 
-  var TestArSns = {
-  initialized:false,
-  listening:false,
-  armed:false,
-  asking:false,
-  permission:0,
-  hasOrientation:false,
-  alpha:0,
-  beta:0,
-  gamma:0,
-  hasGravity:false,
-  gx:0,
-  gy:0,
-  gz:0,
-  needsPrompt:function () {
-        return typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
-      },
-  init:function () {
-        if (TestArSns.initialized)
-          return;
-        TestArSns.initialized = true;
-        if (!TestArSns.needsPrompt())
-          TestArSns.permission = 3;
-        // iOS only shows the prompt from inside a tap handler, and Unity sees a tap a frame after it: listen to the page itself
-        var onTap = function () { TestArSns.request(); };
-        window.addEventListener('touchend', onTap, true);
-        window.addEventListener('click', onTap, true);
-      },
-  request:function () {
-        if (!TestArSns.armed || TestArSns.asking || TestArSns.permission === 1 || !TestArSns.needsPrompt())
-          return;
-        TestArSns.asking = true;
-        var requests;
-        try {
-          // Both in the same tap: iOS shows one prompt for the two
-          requests = [DeviceMotionEvent.requestPermission()];
-          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
-            requests.push(DeviceOrientationEvent.requestPermission());
-        } catch (e) {
-          requests = [Promise.reject(e)];
-        }
-        Promise.all(requests).then(function (answers) {
-          TestArSns.asking = false;
-          var granted = answers.every(function (answer) { return answer === 'granted'; });
-          TestArSns.permission = granted ? 1 : 2;
-          if (granted)
-            TestArSns.armed = false;
-        }, function (e) {
-          // Not from a real tap: the next one asks again
-          TestArSns.asking = false;
-          console.warn('[TestARSensors] Permission request failed: ' + (e && e.message || e));
-        });
-      },
-  onOrientation:function (e) {
-        if (e.alpha === null && e.beta === null && e.gamma === null)
-          return;
-        TestArSns.hasOrientation = true;
-        TestArSns.alpha = e.alpha || 0;
-        TestArSns.beta = e.beta || 0;
-        TestArSns.gamma = e.gamma || 0;
-      },
-  onMotion:function (e) {
-        var g = e.accelerationIncludingGravity;
-        if (!g || g.x === null || g.y === null || g.z === null)
-          return;
-        TestArSns.hasGravity = true;
-        TestArSns.gx = g.x;
-        TestArSns.gy = g.y;
-        TestArSns.gz = g.z;
-      },
-  screenAngle:function () {
-        if (screen.orientation && typeof screen.orientation.angle === 'number')
-          return screen.orientation.angle;
-        return typeof window.orientation === 'number' ? window.orientation : 0;
-      },
-  };
-  function _TestARSensors_Arm() {
-      TestArSns.init();
-      TestArSns.armed = true;
-    }
-
-  function _TestARSensors_Read(ptr) {
-      var o = ptr >> 2;
-      HEAPF32[o] = TestArSns.hasOrientation ? 1 : 0;
-      HEAPF32[o + 1] = TestArSns.alpha;
-      HEAPF32[o + 2] = TestArSns.beta;
-      HEAPF32[o + 3] = TestArSns.gamma;
-      HEAPF32[o + 4] = TestArSns.hasGravity ? 1 : 0;
-      HEAPF32[o + 5] = TestArSns.gx;
-      HEAPF32[o + 6] = TestArSns.gy;
-      HEAPF32[o + 7] = TestArSns.gz;
-      HEAPF32[o + 8] = TestArSns.screenAngle();
-      HEAPF32[o + 9] = TestArSns.permission;
-    }
-
-  function _TestARSensors_Start() {
-      TestArSns.init();
-      TestArSns.armed = true;
-      if (TestArSns.listening)
-        return;
-      TestArSns.listening = true;
-      TestArSns.hasOrientation = false;
-      TestArSns.hasGravity = false;
-      window.addEventListener('deviceorientation', TestArSns.onOrientation);
-      window.addEventListener('devicemotion', TestArSns.onMotion);
-    }
-
-  function _TestARSensors_Stop() {
-      TestArSns.armed = false;
-      if (!TestArSns.listening)
-        return;
-      TestArSns.listening = false;
-      window.removeEventListener('deviceorientation', TestArSns.onOrientation);
-      window.removeEventListener('devicemotion', TestArSns.onMotion);
-    }
-
   
   var ToyRec = {
   status:0,
@@ -19873,7 +19757,6 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'MediaPipeLoader',
   'ToyRec',
   'PhotoGallery',
-  'TestArSns',
   'PlanarCam',
   'MotionSns',
   'IDBFS',
@@ -20350,14 +20233,6 @@ var wasmImports = {
   PlanarCamera_ReadFrame: _PlanarCamera_ReadFrame,
   /** @export */
   PlanarCamera_Reset: _PlanarCamera_Reset,
-  /** @export */
-  TestARSensors_Arm: _TestARSensors_Arm,
-  /** @export */
-  TestARSensors_Read: _TestARSensors_Read,
-  /** @export */
-  TestARSensors_Start: _TestARSensors_Start,
-  /** @export */
-  TestARSensors_Stop: _TestARSensors_Stop,
   /** @export */
   ToyRecognizer_GetError: _ToyRecognizer_GetError,
   /** @export */

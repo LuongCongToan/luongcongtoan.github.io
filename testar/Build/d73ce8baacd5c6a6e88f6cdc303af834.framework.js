@@ -6987,12 +6987,17 @@ async function createWasm() {
           return screen.orientation.angle;
         return typeof window.orientation === 'number' ? window.orientation : 0;
       },
+  eventTime:function (e) {
+        var t = e.timeStamp;
+        // Some old WebViews stamp events with epoch milliseconds
+        return t > 0 && t < 1e12 ? t : performance.now();
+      },
   onOrientation:function (e) {
         if (e.alpha === null && e.beta === null && e.gamma === null)
           return;
         var o = MotionSns.head * MotionSns.stride;
         var s = MotionSns.samples;
-        s[o] = performance.now();
+        s[o] = MotionSns.eventTime(e);
         s[o + 1] = e.alpha || 0;
         s[o + 2] = e.beta || 0;
         s[o + 3] = e.gamma || 0;
@@ -7008,7 +7013,7 @@ async function createWasm() {
         MotionSns.gx = g.x;
         MotionSns.gy = g.y;
         MotionSns.gz = g.z;
-        MotionSns.gravityTime = performance.now();
+        MotionSns.gravityTime = MotionSns.eventTime(e);
       },
   };
   function _MotionSensors_Arm() {

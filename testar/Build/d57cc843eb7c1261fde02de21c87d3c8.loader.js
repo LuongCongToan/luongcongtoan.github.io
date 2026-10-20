@@ -50,7 +50,7 @@ function createUnityInstance(canvas, config, onProgress = () => { }) {
       preserveDrawingBuffer: false,
       powerPreference: 2,
     },
-    wasmFileSize: 53568315,
+    wasmFileSize: 53568359,
     cacheControl: function (url) {
       const isCacheable = (
         url == Module.dataUrl

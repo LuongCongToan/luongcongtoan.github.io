@@ -1480,6 +1480,7 @@ async function createWasm() {
   resumeOnVisible:false,
   hasFrameCallback:false,
   frame:0,
+  frameTime:0,
   lastTime:-1,
   uploadedFrame:-1,
   init:function () {
@@ -1532,8 +1533,10 @@ async function createWasm() {
   
         if (video.requestVideoFrameCallback) {
           WebCam.hasFrameCallback = true;
-          var onFrame = function () {
+          var onFrame = function (now, metadata) {
             WebCam.frame++;
+            // Chrome stamps camera frames with their capture time; elsewhere the callback is within a frame of it
+            WebCam.frameTime = (metadata && metadata.captureTime) || now || performance.now();
             video.requestVideoFrameCallback(onFrame);
           };
           video.requestVideoFrameCallback(onFrame);
@@ -6921,21 +6924,32 @@ async function createWasm() {
   armed:false,
   asking:false,
   permission:0,
-  hasOrientation:false,
-  alpha:0,
-  beta:0,
-  gamma:0,
+  capacity:64,
+  stride:5,
+  samples:null,
+  head:0,
+  written:0,
+  read:0,
   hasGravity:false,
   gx:0,
   gy:0,
   gz:0,
+  gravityTime:0,
   needsPrompt:function () {
         return typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+      },
+  isSupported:function () {
+        var ua = navigator.userAgent || '';
+        if (!window.isSecureContext || typeof DeviceOrientationEvent === 'undefined')
+          return false;
+        // iPads report a Mac user agent
+        return /Android|iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
       },
   init:function () {
         if (MotionSns.initialized)
           return;
         MotionSns.initialized = true;
+        MotionSns.samples = new Float32Array(MotionSns.capacity * MotionSns.stride);
         if (!MotionSns.needsPrompt())
           MotionSns.permission = 3;
         // iOS only shows the prompt from inside a tap handler, and Unity sees a tap a frame after it: listen to the page itself
@@ -6951,7 +6965,7 @@ async function createWasm() {
         try {
           // Both in the same tap: iOS shows one prompt for the two
           requests = [DeviceMotionEvent.requestPermission()];
-          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
+          if (typeof DeviceOrientationEvent.requestPermission === 'function')
             requests.push(DeviceOrientationEvent.requestPermission());
         } catch (e) {
           requests = [Promise.reject(e)];
@@ -6968,13 +6982,23 @@ async function createWasm() {
           console.warn('[MotionSensors] Permission request failed: ' + (e && e.message || e));
         });
       },
+  screenAngle:function () {
+        if (screen.orientation && typeof screen.orientation.angle === 'number')
+          return screen.orientation.angle;
+        return typeof window.orientation === 'number' ? window.orientation : 0;
+      },
   onOrientation:function (e) {
         if (e.alpha === null && e.beta === null && e.gamma === null)
           return;
-        MotionSns.hasOrientation = true;
-        MotionSns.alpha = e.alpha || 0;
-        MotionSns.beta = e.beta || 0;
-        MotionSns.gamma = e.gamma || 0;
+        var o = MotionSns.head * MotionSns.stride;
+        var s = MotionSns.samples;
+        s[o] = performance.now();
+        s[o + 1] = e.alpha || 0;
+        s[o + 2] = e.beta || 0;
+        s[o + 3] = e.gamma || 0;
+        s[o + 4] = MotionSns.screenAngle();
+        MotionSns.head = (MotionSns.head + 1) % MotionSns.capacity;
+        MotionSns.written++;
       },
   onMotion:function (e) {
         var g = e.accelerationIncludingGravity;
@@ -6984,11 +7008,7 @@ async function createWasm() {
         MotionSns.gx = g.x;
         MotionSns.gy = g.y;
         MotionSns.gz = g.z;
-      },
-  screenAngle:function () {
-        if (screen.orientation && typeof screen.orientation.angle === 'number')
-          return screen.orientation.angle;
-        return typeof window.orientation === 'number' ? window.orientation : 0;
+        MotionSns.gravityTime = performance.now();
       },
   };
   function _MotionSensors_Arm() {
@@ -6996,28 +7016,64 @@ async function createWasm() {
       MotionSns.armed = true;
     }
 
-  function _MotionSensors_Read(ptr) {
+  function _MotionSensors_GetPermission() {
+      MotionSns.init();
+      return MotionSns.permission;
+    }
+
+  function _MotionSensors_IsAsking() {
+      return MotionSns.asking ? 1 : 0;
+    }
+
+  function _MotionSensors_IsSupported() {
+      return MotionSns.isSupported() ? 1 : 0;
+    }
+
+  function _MotionSensors_NeedsPrompt() {
+      return MotionSns.needsPrompt() ? 1 : 0;
+    }
+
+  function _MotionSensors_Read(ptr, max) {
+      var pending = MotionSns.written - MotionSns.read;
+      if (pending <= 0)
+        return 0;
+      if (pending > MotionSns.capacity)
+        pending = MotionSns.capacity;
+      if (pending > max)
+        pending = max;
+      MotionSns.read = MotionSns.written;
+      var stride = MotionSns.stride, capacity = MotionSns.capacity, s = MotionSns.samples;
+      var first = (MotionSns.head - pending + capacity) % capacity;
       var o = ptr >> 2;
-      HEAPF32[o] = MotionSns.hasOrientation ? 1 : 0;
-      HEAPF32[o + 1] = MotionSns.alpha;
-      HEAPF32[o + 2] = MotionSns.beta;
-      HEAPF32[o + 3] = MotionSns.gamma;
-      HEAPF32[o + 4] = MotionSns.hasGravity ? 1 : 0;
-      HEAPF32[o + 5] = MotionSns.gx;
-      HEAPF32[o + 6] = MotionSns.gy;
-      HEAPF32[o + 7] = MotionSns.gz;
-      HEAPF32[o + 8] = MotionSns.screenAngle();
-      HEAPF32[o + 9] = MotionSns.permission;
+      for (var i = 0; i < pending; i++) {
+        var src = ((first + i) % capacity) * stride;
+        for (var k = 0; k < stride; k++)
+          HEAPF32[o + i * stride + k] = s[src + k];
+      }
+      return pending;
+    }
+
+  function _MotionSensors_ReadGravity(ptr) {
+      if (!MotionSns.hasGravity)
+        return 0;
+      var o = ptr >> 2;
+      HEAPF32[o] = MotionSns.gx;
+      HEAPF32[o + 1] = MotionSns.gy;
+      HEAPF32[o + 2] = MotionSns.gz;
+      HEAPF32[o + 3] = MotionSns.gravityTime;
+      return 1;
     }
 
   function _MotionSensors_Start() {
       MotionSns.init();
       MotionSns.armed = true;
+      MotionSns.head = 0;
+      MotionSns.written = 0;
+      MotionSns.read = 0;
+      MotionSns.hasGravity = false;
       if (MotionSns.listening)
         return;
       MotionSns.listening = true;
-      MotionSns.hasOrientation = false;
-      MotionSns.hasGravity = false;
       window.addEventListener('deviceorientation', MotionSns.onOrientation);
       window.addEventListener('devicemotion', MotionSns.onMotion);
     }
@@ -7130,6 +7186,172 @@ async function createWasm() {
       PhotoGallery.armed = false;
       if (PhotoGallery.status !== 1)
         PhotoGallery.save();
+    }
+
+  var PlanarCam = {
+  canvas:null,
+  context:null,
+  width:0,
+  height:0,
+  lastFrame:-1,
+  frameTime:0,
+  ensure:function (width, height) {
+        if (!PlanarCam.canvas) {
+          PlanarCam.canvas = document.createElement('canvas');
+          PlanarCam.context = PlanarCam.canvas.getContext('2d', { willReadFrequently: true });
+        }
+        if (PlanarCam.width !== width || PlanarCam.height !== height) {
+          PlanarCam.canvas.width = width;
+          PlanarCam.canvas.height = height;
+          PlanarCam.width = width;
+          PlanarCam.height = height;
+        }
+        return PlanarCam.context;
+      },
+  };
+  function _PlanarCamera_GetFrameTime() {
+      return PlanarCam.frameTime;
+    }
+
+  
+  function _PlanarCamera_ReadFrame(ptr, width, height) {
+      if (!WebCam.isPlaying())
+        return 0;
+      var frame = WebCam.currentFrame();
+      if (frame === PlanarCam.lastFrame)
+        return 0;
+      var context = PlanarCam.ensure(width, height);
+      var data;
+      try {
+        context.drawImage(WebCam.video, 0, 0, width, height);
+        data = context.getImageData(0, 0, width, height).data;
+      } catch (e) {
+        return 0;
+      }
+      HEAPU8.set(data, ptr);
+      PlanarCam.lastFrame = frame;
+      PlanarCam.frameTime = WebCam.frameTime || performance.now();
+      return 1;
+    }
+
+  function _PlanarCamera_Reset() {
+      PlanarCam.lastFrame = -1;
+    }
+
+  var TestArSns = {
+  initialized:false,
+  listening:false,
+  armed:false,
+  asking:false,
+  permission:0,
+  hasOrientation:false,
+  alpha:0,
+  beta:0,
+  gamma:0,
+  hasGravity:false,
+  gx:0,
+  gy:0,
+  gz:0,
+  needsPrompt:function () {
+        return typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
+      },
+  init:function () {
+        if (TestArSns.initialized)
+          return;
+        TestArSns.initialized = true;
+        if (!TestArSns.needsPrompt())
+          TestArSns.permission = 3;
+        // iOS only shows the prompt from inside a tap handler, and Unity sees a tap a frame after it: listen to the page itself
+        var onTap = function () { TestArSns.request(); };
+        window.addEventListener('touchend', onTap, true);
+        window.addEventListener('click', onTap, true);
+      },
+  request:function () {
+        if (!TestArSns.armed || TestArSns.asking || TestArSns.permission === 1 || !TestArSns.needsPrompt())
+          return;
+        TestArSns.asking = true;
+        var requests;
+        try {
+          // Both in the same tap: iOS shows one prompt for the two
+          requests = [DeviceMotionEvent.requestPermission()];
+          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
+            requests.push(DeviceOrientationEvent.requestPermission());
+        } catch (e) {
+          requests = [Promise.reject(e)];
+        }
+        Promise.all(requests).then(function (answers) {
+          TestArSns.asking = false;
+          var granted = answers.every(function (answer) { return answer === 'granted'; });
+          TestArSns.permission = granted ? 1 : 2;
+          if (granted)
+            TestArSns.armed = false;
+        }, function (e) {
+          // Not from a real tap: the next one asks again
+          TestArSns.asking = false;
+          console.warn('[TestARSensors] Permission request failed: ' + (e && e.message || e));
+        });
+      },
+  onOrientation:function (e) {
+        if (e.alpha === null && e.beta === null && e.gamma === null)
+          return;
+        TestArSns.hasOrientation = true;
+        TestArSns.alpha = e.alpha || 0;
+        TestArSns.beta = e.beta || 0;
+        TestArSns.gamma = e.gamma || 0;
+      },
+  onMotion:function (e) {
+        var g = e.accelerationIncludingGravity;
+        if (!g || g.x === null || g.y === null || g.z === null)
+          return;
+        TestArSns.hasGravity = true;
+        TestArSns.gx = g.x;
+        TestArSns.gy = g.y;
+        TestArSns.gz = g.z;
+      },
+  screenAngle:function () {
+        if (screen.orientation && typeof screen.orientation.angle === 'number')
+          return screen.orientation.angle;
+        return typeof window.orientation === 'number' ? window.orientation : 0;
+      },
+  };
+  function _TestARSensors_Arm() {
+      TestArSns.init();
+      TestArSns.armed = true;
+    }
+
+  function _TestARSensors_Read(ptr) {
+      var o = ptr >> 2;
+      HEAPF32[o] = TestArSns.hasOrientation ? 1 : 0;
+      HEAPF32[o + 1] = TestArSns.alpha;
+      HEAPF32[o + 2] = TestArSns.beta;
+      HEAPF32[o + 3] = TestArSns.gamma;
+      HEAPF32[o + 4] = TestArSns.hasGravity ? 1 : 0;
+      HEAPF32[o + 5] = TestArSns.gx;
+      HEAPF32[o + 6] = TestArSns.gy;
+      HEAPF32[o + 7] = TestArSns.gz;
+      HEAPF32[o + 8] = TestArSns.screenAngle();
+      HEAPF32[o + 9] = TestArSns.permission;
+    }
+
+  function _TestARSensors_Start() {
+      TestArSns.init();
+      TestArSns.armed = true;
+      if (TestArSns.listening)
+        return;
+      TestArSns.listening = true;
+      TestArSns.hasOrientation = false;
+      TestArSns.hasGravity = false;
+      window.addEventListener('deviceorientation', TestArSns.onOrientation);
+      window.addEventListener('devicemotion', TestArSns.onMotion);
+    }
+
+  function _TestARSensors_Stop() {
+      TestArSns.armed = false;
+      if (!TestArSns.listening)
+        return;
+      TestArSns.listening = false;
+      window.removeEventListener('deviceorientation', TestArSns.onOrientation);
+      window.removeEventListener('devicemotion', TestArSns.onMotion);
     }
 
   
@@ -7441,483 +7663,6 @@ async function createWasm() {
       var api = window.ApplayduWebApp;
       if (api && api.setEnforceOrientation)
         api.setEnforceOrientation(enabled !== 0);
-    }
-
-  var WorldTrk = {
-  initialized:false,
-  status:0,
-  error:"",
-  engine:null,
-  startId:0,
-  settings:null,
-  running:false,
-  paused:false,
-  armed:false,
-  motion:null,
-  reality:null,
-  width:0,
-  height:0,
-  newFrame:false,
-  needsPostRender:false,
-  readFramebuffer:null,
-  drawFramebuffer:null,
-  drawTexture:null,
-  states:{
-  LIMITED:1,
-  NORMAL:2,
-  },
-  reasons:{
-  INITIALIZING:1,
-  RELOCALIZING:2,
-  TOO_MUCH_MOTION:3,
-  NOT_ENOUGH_TEXTURE:4,
-  },
-  hitTypes:{
-  FEATURE_POINT:1,
-  ESTIMATED_SURFACE:2,
-  DETECTED_SURFACE:4,
-  },
-  incompatibilities:{
-  1:"unsupported OS",
-  2:"unsupported browser",
-  3:"no motion sensors",
-  4:"no camera access",
-  5:"no WebAssembly",
-  },
-  init:function () {
-        if (WorldTrk.initialized)
-          return;
-        WorldTrk.initialized = true;
-  
-        // iOS only shows the motion prompt from inside a tap handler, and Unity sees a tap a frame after it: listen to the page itself
-        var onTap = function () { WorldTrk.requestMotion(); };
-        window.addEventListener('touchend', onTap, true);
-        window.addEventListener('click', onTap, true);
-  
-        // Release the camera while the tab is hidden, reopen it when the player comes back
-        document.addEventListener('visibilitychange', function () {
-          if (!WorldTrk.running || WorldTrk.status !== 2)
-            return;
-          try {
-            if (document.hidden && !WorldTrk.paused) {
-              XR8.pause();
-              WorldTrk.paused = true;
-            } else if (!document.hidden && WorldTrk.paused) {
-              WorldTrk.paused = false;
-              XR8.resume();
-            }
-          } catch (e) {
-            console.warn('[WorldTracker] ' + WorldTrk.describe(e));
-          }
-        });
-      },
-  needsMotionPrompt:function () {
-        return typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function';
-      },
-  requestMotion:function () {
-        if (!WorldTrk.armed || WorldTrk.motion || !WorldTrk.needsMotionPrompt())
-          return;
-        var motion;
-        try {
-          // Both in the same tap: iOS shows one prompt for the two
-          var requests = [DeviceMotionEvent.requestPermission()];
-          if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function')
-            requests.push(DeviceOrientationEvent.requestPermission());
-          motion = Promise.all(requests);
-        } catch (e) {
-          motion = Promise.reject(e);
-        }
-        motion = motion.then(function (answers) {
-          return answers.every(function (answer) { return answer === 'granted'; }) ? 'granted' : 'denied';
-        }, function (e) {
-          console.warn('[WorldTracker] Motion permission request failed: ' + WorldTrk.describe(e));
-          // The next tap asks again
-          if (WorldTrk.motion === motion)
-            WorldTrk.motion = null;
-          return null;
-        });
-        WorldTrk.motion = motion;
-      },
-  unsupportedReason:function () {
-        var gl = typeof GLctx !== 'undefined' ? GLctx : null;
-        var ua = navigator.userAgent || '';
-        if (!window.isSecureContext)
-          return 'The page must be served over HTTPS';
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
-          return 'No camera API in this browser';
-        if (typeof WebAssembly !== 'object')
-          return 'No WebAssembly in this browser';
-        if (!gl || typeof gl.blitFramebuffer !== 'function')
-          return 'World tracking needs WebGL 2';
-        // iPads report a Mac user agent
-        if (!/Android|iPhone|iPad|iPod/i.test(ua) && !(/Macintosh/.test(ua) && navigator.maxTouchPoints > 1))
-          return 'World tracking needs a phone or tablet';
-        return '';
-      },
-  resolveUrl:function (url) {
-        return new URL(url.replace(/\/+$/, '') + '/', document.baseURI).href.replace(/\/$/, '');
-      },
-  load:function (url) {
-        if (WorldTrk.engine)
-          return WorldTrk.engine;
-        var engine = new Promise(function (resolve, reject) {
-          if (window.XR8) {
-            resolve(window.XR8);
-            return;
-          }
-          var timer = 0;
-          var onLoaded = function () {
-            clearTimeout(timer);
-            resolve(window.XR8);
-          };
-          window.addEventListener('xrloaded', onLoaded, { once: true });
-          var script = document.createElement('script');
-          script.src = url + '/xr.js';
-          script.async = true;
-          // xrloaded follows the script once the engine's WebAssembly is ready; it never comes when that fails
-          script.onload = function () {
-            timer = setTimeout(function () {
-              window.removeEventListener('xrloaded', onLoaded);
-              reject(new Error('The 8th Wall engine did not start (' + script.src + ')'));
-            }, 30000);
-          };
-          script.onerror = function () {
-            window.removeEventListener('xrloaded', onLoaded);
-            script.remove();
-            reject(new Error('Could not load ' + script.src));
-          };
-          document.head.appendChild(script);
-        }).then(function (XR8) {
-          // A module import next to xr.js: it needs a JavaScript MIME type (and CORS from another origin)
-          return XR8.loadChunk('slam').then(function () {
-            if (!XR8.XrController)
-              throw new Error('Could not load the 8th Wall SLAM chunk (' + url + '/xr-slam.js)');
-            return XR8;
-          });
-        });
-        engine.catch(function () {
-          if (WorldTrk.engine === engine)
-            WorldTrk.engine = null;
-        });
-        WorldTrk.engine = engine;
-        return engine;
-      },
-  describe:function (e) {
-        if (!e)
-          return 'Unknown error';
-        if (e.type === 'permission')
-          return 'Permission ' + (e.status || 'denied') + (e.permission ? ': ' + e.permission : '');
-        return e.message || String(e);
-      },
-  fail:function (e, status) {
-        WorldTrk.status = status || (e && e.notSupported ? 3 : e && (e.permissionDenied || e.type === 'permission') ? 4 : 5);
-        WorldTrk.error = WorldTrk.describe(e);
-        console.error('[WorldTracker] ' + WorldTrk.error);
-        // Out of the engine's own callbacks, and only if no other start came since
-        var id = WorldTrk.startId;
-        setTimeout(function () {
-          if (id === WorldTrk.startId)
-            WorldTrk.stopEngine();
-        }, 0);
-      },
-  stopEngine:function () {
-        WorldTrk.reality = null;
-        WorldTrk.width = 0;
-        WorldTrk.height = 0;
-        WorldTrk.needsPostRender = false;
-        WorldTrk.paused = false;
-        if (WorldTrk.running) {
-          WorldTrk.running = false;
-          try {
-            XR8.stop();
-            XR8.clearCameraPipelineModules();
-          } catch (e) {
-            console.warn('[WorldTracker] ' + WorldTrk.describe(e));
-          }
-        }
-        if (WorldTrk.readFramebuffer) {
-          GLctx.deleteFramebuffer(WorldTrk.readFramebuffer);
-          GLctx.deleteFramebuffer(WorldTrk.drawFramebuffer);
-          WorldTrk.readFramebuffer = null;
-          WorldTrk.drawFramebuffer = null;
-          WorldTrk.drawTexture = null;
-        }
-      },
-  run:function (XR8, id) {
-        WorldTrk.armed = false;
-        XR8.clearCameraPipelineModules();
-        XR8.XrController.configure({ scale: WorldTrk.settings.absolute ? 'absolute' : 'responsive', disableWorldTracking: false });
-        XR8.addCameraPipelineModules([XR8.XrController.pipelineModule(), WorldTrk.module(id)]);
-        WorldTrk.running = true;
-        XR8.run({
-          canvas: Module['canvas'],
-          ownRunLoop: false,
-          webgl2: true,
-          allowedDevices: XR8.XrConfig.device().MOBILE,
-          cameraConfig: { direction: XR8.XrConfig.camera().BACK },
-        });
-      },
-  module:function (id) {
-        return {
-          name: 'applaydu-worldtracker',
-          onStart: function (e) {
-            if (id !== WorldTrk.startId)
-              return;
-            var settings = WorldTrk.settings;
-            // The camera starts above the floor (y = 0) facing -z; with responsive scale its height sets the world unit
-            XR8.XrController.updateCameraProjectionMatrix({
-              origin: { x: 0, y: settings.cameraHeight, z: 0 },
-              facing: { w: 1, x: 0, y: 0, z: 0 },
-              cam: { pixelRectWidth: e.canvasWidth, pixelRectHeight: e.canvasHeight, nearClipPlane: settings.near, farClipPlane: settings.far },
-            });
-            WorldTrk.status = 2;
-          },
-          onCameraStatusChange: function (e) {
-            if (id !== WorldTrk.startId || e.status !== 'failed')
-              return;
-            var denied = e.reason === 'DENY_CAMERA';
-            WorldTrk.fail(new Error(denied ? 'Camera access denied' : 'Camera failed: ' + e.reason), denied ? 4 : 5);
-          },
-          onUpdate: function (e) {
-            var reality = e.processCpuResult && e.processCpuResult.reality;
-            if (id !== WorldTrk.startId || !reality)
-              return;
-            WorldTrk.reality = reality;
-            WorldTrk.width = e.frameStartResult.textureWidth;
-            WorldTrk.height = e.frameStartResult.textureHeight;
-            if (!e.frameStartResult.repeatFrame)
-              WorldTrk.newFrame = true;
-          },
-          onException: function (e) {
-            if (id === WorldTrk.startId)
-              WorldTrk.fail(e);
-          },
-        };
-      },
-  raw:function () {
-        return Object.getPrototypeOf(GLctx);
-      },
-  write:function (ptr) {
-        var o = ptr >> 2;
-        var reality = WorldTrk.reality;
-        HEAPF32.fill(0, o, o + 16);
-        if (reality) {
-          HEAPF32[o] = WorldTrk.states[reality.trackingStatus] || 0;
-          HEAPF32[o + 1] = WorldTrk.reasons[reality.trackingReason] || 0;
-          var p = reality.position, q = reality.rotation;
-          if (p && q) {
-            // The engine's axes are right-handed (three.js), Unity's left-handed: mirror z
-            HEAPF32[o + 2] = 1;
-            HEAPF32[o + 3] = p.x;
-            HEAPF32[o + 4] = p.y;
-            HEAPF32[o + 5] = -p.z;
-            HEAPF32[o + 6] = -q.x;
-            HEAPF32[o + 7] = -q.y;
-            HEAPF32[o + 8] = q.z;
-            HEAPF32[o + 9] = q.w;
-          }
-          // Column-major OpenGL projection, the convention of Unity's Camera.projectionMatrix
-          var m = reality.intrinsics;
-          if (m && m.length >= 16) {
-            HEAPF32[o + 10] = m[0];
-            HEAPF32[o + 11] = m[5];
-            HEAPF32[o + 12] = m[8];
-            HEAPF32[o + 13] = m[9];
-          }
-        }
-        HEAPF32[o + 14] = WorldTrk.width;
-        HEAPF32[o + 15] = WorldTrk.height;
-      },
-  };
-  function _WorldTracker_ArmMotionPrompt() {
-      WorldTrk.init();
-      WorldTrk.armed = true;
-    }
-
-  function _WorldTracker_CopyCameraTexture(textureId, width, height) {
-      var source = WorldTrk.reality && WorldTrk.reality.realityTexture;
-      var target = GL.textures[textureId];
-      if (!source || !target || width !== WorldTrk.width || height !== WorldTrk.height)
-        return 0;
-  
-      var gl = GLctx, raw = WorldTrk.raw();
-      if (!WorldTrk.readFramebuffer) {
-        WorldTrk.readFramebuffer = gl.createFramebuffer();
-        WorldTrk.drawFramebuffer = gl.createFramebuffer();
-        WorldTrk.drawTexture = null;
-      }
-      var read = raw.getParameter.call(gl, gl.READ_FRAMEBUFFER_BINDING);
-      var draw = raw.getParameter.call(gl, gl.DRAW_FRAMEBUFFER_BINDING);
-      var scissor = raw.isEnabled.call(gl, gl.SCISSOR_TEST);
-  
-      raw.bindFramebuffer.call(gl, gl.READ_FRAMEBUFFER, WorldTrk.readFramebuffer);
-      gl.framebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, source, 0);
-      raw.bindFramebuffer.call(gl, gl.DRAW_FRAMEBUFFER, WorldTrk.drawFramebuffer);
-      if (WorldTrk.drawTexture !== target) {
-        gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target, 0);
-        WorldTrk.drawTexture = target;
-      }
-      if (scissor)
-        raw.disable.call(gl, gl.SCISSOR_TEST);
-      // Unity textures start at the bottom row, the camera image at the top one
-      gl.blitFramebuffer(0, 0, width, height, 0, height, width, 0, gl.COLOR_BUFFER_BIT, gl.NEAREST);
-      if (scissor)
-        raw.enable.call(gl, gl.SCISSOR_TEST);
-      raw.bindFramebuffer.call(gl, gl.READ_FRAMEBUFFER, read);
-      raw.bindFramebuffer.call(gl, gl.DRAW_FRAMEBUFFER, draw);
-      return 1;
-    }
-
-  function _WorldTracker_GetError() {
-      var size = lengthBytesUTF8(WorldTrk.error) + 1;
-      var buffer = _malloc(size);
-      stringToUTF8(WorldTrk.error, buffer, size);
-      return buffer;
-    }
-
-  function _WorldTracker_GetStatus() {
-      return WorldTrk.status;
-    }
-
-  function _WorldTracker_HitTest(x, y, types, ptr, capacity) {
-      if (WorldTrk.status !== 2 || !types || !window.XR8 || !XR8.XrController)
-        return 0;
-      var names = [];
-      if (types & 1)
-        names.push('FEATURE_POINT');
-      if (types & 2)
-        names.push('ESTIMATED_SURFACE');
-      if (types & 4)
-        names.push('DETECTED_SURFACE');
-      var hits;
-      try {
-        hits = XR8.XrController.hitTest(x, y, names) || [];
-      } catch (e) {
-        return 0;
-      }
-      hits.sort(function (a, b) { return a.distance - b.distance; });
-      var count = Math.min(hits.length, capacity);
-      var base = ptr >> 2;
-      for (var i = 0; i < count; i++) {
-        var hit = hits[i], o = base + i * 9;
-        HEAPF32[o] = WorldTrk.hitTypes[hit.type] || 0;
-        HEAPF32[o + 1] = hit.distance;
-        HEAPF32[o + 2] = hit.position.x;
-        HEAPF32[o + 3] = hit.position.y;
-        HEAPF32[o + 4] = -hit.position.z;
-        HEAPF32[o + 5] = -hit.rotation.x;
-        HEAPF32[o + 6] = -hit.rotation.y;
-        HEAPF32[o + 7] = hit.rotation.z;
-        HEAPF32[o + 8] = hit.rotation.w;
-      }
-      return count;
-    }
-
-  function _WorldTracker_IsSupported() {
-      return WorldTrk.unsupportedReason() ? 0 : 1;
-    }
-
-  function _WorldTracker_PostRender() {
-      if (!WorldTrk.needsPostRender)
-        return;
-      WorldTrk.needsPostRender = false;
-      if (WorldTrk.status !== 2 || WorldTrk.paused)
-        return;
-      try {
-        XR8.runPostRender();
-      } catch (e) {
-        WorldTrk.fail(e);
-      }
-    }
-
-  
-  function _WorldTracker_Preload(urlPtr) {
-      WorldTrk.init();
-      if (WorldTrk.unsupportedReason())
-        return;
-      WorldTrk.load(WorldTrk.resolveUrl(UTF8ToString(urlPtr))).catch(function (e) {
-        console.warn('[WorldTracker] Preload failed: ' + WorldTrk.describe(e));
-      });
-    }
-
-  function _WorldTracker_Recenter() {
-      if (WorldTrk.status === 2 && window.XR8 && XR8.XrController)
-        XR8.XrController.recenter();
-    }
-
-  
-  function _WorldTracker_Start(urlPtr, absolute, cameraHeight, near, far) {
-      WorldTrk.init();
-      WorldTrk.stopEngine();
-      var id = ++WorldTrk.startId;
-      WorldTrk.status = 1;
-      WorldTrk.error = '';
-      // A tap while the engine downloads still gets the motion prompt
-      WorldTrk.armed = true;
-      WorldTrk.settings = { absolute: absolute !== 0, cameraHeight: cameraHeight, near: near, far: far };
-  
-      var reason = WorldTrk.unsupportedReason();
-      if (reason) {
-        WorldTrk.fail(new Error(reason), 3);
-        return;
-      }
-  
-      WorldTrk.load(WorldTrk.resolveUrl(UTF8ToString(urlPtr))).then(function (XR8) {
-        if (id !== WorldTrk.startId)
-          return null;
-        var devices = { allowedDevices: XR8.XrConfig.device().MOBILE };
-        if (!XR8.XrDevice.isDeviceBrowserCompatible(devices)) {
-          var reasons = XR8.XrDevice.incompatibleReasons(devices).map(function (r) { return WorldTrk.incompatibilities[r] || r; });
-          var unsupported = new Error('The 8th Wall engine does not support this browser (' + reasons.join(', ') + ')');
-          unsupported.notSupported = true;
-          throw unsupported;
-        }
-        // Let a motion prompt the player is answering finish, so the engine doesn't show its own over it
-        return Promise.resolve(WorldTrk.motion).then(function (motion) {
-          if (id !== WorldTrk.startId)
-            return;
-          if (motion === 'denied') {
-            var denied = new Error('Motion sensor access denied');
-            denied.permissionDenied = true;
-            throw denied;
-          }
-          WorldTrk.run(XR8, id);
-        });
-      }).catch(function (e) {
-        if (id === WorldTrk.startId)
-          WorldTrk.fail(e);
-      });
-    }
-
-  function _WorldTracker_Stop() {
-      WorldTrk.startId++;
-      WorldTrk.armed = false;
-      WorldTrk.status = 0;
-      WorldTrk.error = '';
-      WorldTrk.stopEngine();
-    }
-
-  function _WorldTracker_Update(ptr) {
-      if (WorldTrk.status !== 2 || WorldTrk.paused)
-        return -1;
-      var gl = GLctx, raw = WorldTrk.raw();
-      // The engine uploads the camera frame into this context, which fails while a pixel unpack buffer is bound
-      var unpack = raw.getParameter.call(gl, gl.PIXEL_UNPACK_BUFFER_BINDING);
-      if (unpack)
-        raw.bindBuffer.call(gl, gl.PIXEL_UNPACK_BUFFER, null);
-      WorldTrk.newFrame = false;
-      try {
-        XR8.runPreRender(performance.now());
-        WorldTrk.needsPostRender = true;
-      } catch (e) {
-        WorldTrk.fail(e);
-        return -1;
-      } finally {
-        if (unpack)
-          raw.bindBuffer.call(gl, gl.PIXEL_UNPACK_BUFFER, unpack);
-      }
-      WorldTrk.write(ptr);
-      return WorldTrk.newFrame ? 1 : 0;
     }
 
   var ___assert_fail = (condition, filename, line, func) =>
@@ -20128,6 +19873,8 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'MediaPipeLoader',
   'ToyRec',
   'PhotoGallery',
+  'TestArSns',
+  'PlanarCam',
   'MotionSns',
   'IDBFS',
 ];
@@ -20572,7 +20319,17 @@ var wasmImports = {
   /** @export */
   MotionSensors_Arm: _MotionSensors_Arm,
   /** @export */
+  MotionSensors_GetPermission: _MotionSensors_GetPermission,
+  /** @export */
+  MotionSensors_IsAsking: _MotionSensors_IsAsking,
+  /** @export */
+  MotionSensors_IsSupported: _MotionSensors_IsSupported,
+  /** @export */
+  MotionSensors_NeedsPrompt: _MotionSensors_NeedsPrompt,
+  /** @export */
   MotionSensors_Read: _MotionSensors_Read,
+  /** @export */
+  MotionSensors_ReadGravity: _MotionSensors_ReadGravity,
   /** @export */
   MotionSensors_Start: _MotionSensors_Start,
   /** @export */
@@ -20587,6 +20344,20 @@ var wasmImports = {
   PhotoGallery_Release: _PhotoGallery_Release,
   /** @export */
   PhotoGallery_Save: _PhotoGallery_Save,
+  /** @export */
+  PlanarCamera_GetFrameTime: _PlanarCamera_GetFrameTime,
+  /** @export */
+  PlanarCamera_ReadFrame: _PlanarCamera_ReadFrame,
+  /** @export */
+  PlanarCamera_Reset: _PlanarCamera_Reset,
+  /** @export */
+  TestARSensors_Arm: _TestARSensors_Arm,
+  /** @export */
+  TestARSensors_Read: _TestARSensors_Read,
+  /** @export */
+  TestARSensors_Start: _TestARSensors_Start,
+  /** @export */
+  TestARSensors_Stop: _TestARSensors_Stop,
   /** @export */
   ToyRecognizer_GetError: _ToyRecognizer_GetError,
   /** @export */
@@ -20639,30 +20410,6 @@ var wasmImports = {
   WebScreen_Init: _WebScreen_Init,
   /** @export */
   WebScreen_SetEnforceOrientation: _WebScreen_SetEnforceOrientation,
-  /** @export */
-  WorldTracker_ArmMotionPrompt: _WorldTracker_ArmMotionPrompt,
-  /** @export */
-  WorldTracker_CopyCameraTexture: _WorldTracker_CopyCameraTexture,
-  /** @export */
-  WorldTracker_GetError: _WorldTracker_GetError,
-  /** @export */
-  WorldTracker_GetStatus: _WorldTracker_GetStatus,
-  /** @export */
-  WorldTracker_HitTest: _WorldTracker_HitTest,
-  /** @export */
-  WorldTracker_IsSupported: _WorldTracker_IsSupported,
-  /** @export */
-  WorldTracker_PostRender: _WorldTracker_PostRender,
-  /** @export */
-  WorldTracker_Preload: _WorldTracker_Preload,
-  /** @export */
-  WorldTracker_Recenter: _WorldTracker_Recenter,
-  /** @export */
-  WorldTracker_Start: _WorldTracker_Start,
-  /** @export */
-  WorldTracker_Stop: _WorldTracker_Stop,
-  /** @export */
-  WorldTracker_Update: _WorldTracker_Update,
   /** @export */
   __assert_fail: ___assert_fail,
   /** @export */

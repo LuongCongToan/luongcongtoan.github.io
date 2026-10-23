@@ -1,0 +1,9 @@
+{
+  "name": "Voltstack",
+  "short_name": "Voltstack",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#1F1F20",
+  "theme_color": "#1F1F20"
+}

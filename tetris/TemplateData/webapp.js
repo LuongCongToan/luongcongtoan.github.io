@@ -47,6 +47,7 @@
   var canvas = document.getElementById("unity-canvas");
   var loading = document.getElementById("app-loading");
   var progressFill = document.getElementById("app-progress-fill");
+  var loadingText = document.getElementById("app-loading-text");
   var rotate = document.getElementById("app-rotate");
   var fullscreenButton = document.getElementById("app-fullscreen-button");
   var error = document.getElementById("app-error");
@@ -283,6 +284,22 @@
       console.warn(message);
   }
 
+  // Calls done once ten frames in a row came under 50 ms apart, or after 8 seconds whatever happens
+  function hideLoadingWhenSmooth(done) {
+    var start = performance.now();
+    var last = start;
+    var smooth = 0;
+    function tick(now) {
+      smooth = now - last < 50 ? smooth + 1 : 0;
+      last = now;
+      if (smooth >= 10 || now - start > 8000)
+        done();
+      else
+        requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
   function boot(loaderUrl, config) {
     config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, MAX_DEVICE_PIXEL_RATIO);
     config.showBanner = showBanner;
@@ -292,11 +309,20 @@
     script.onload = function () {
       createUnityInstance(canvas, config, function (progress) {
         progressFill.style.width = 100 * progress + "%";
+        if (loadingText)
+          loadingText.textContent = "Loading " + Math.floor(100 * progress) + "%";
       }).then(function (instance) {
         api.instance = instance;
-        loading.classList.add("app-hidden");
-        canvas.focus();
-        update();
+        progressFill.style.width = "100%";
+        if (loadingText)
+          loadingText.textContent = "Starting...";
+        // The game's first frames build its UI, hero art and audio: keep the loading screen up until frames run
+        // smoothly, so players see the logo instead of a frozen first frame
+        hideLoadingWhenSmooth(function () {
+          loading.classList.add("app-hidden");
+          canvas.focus();
+          update();
+        });
       }).catch(showError);
     };
     script.onerror = function () {

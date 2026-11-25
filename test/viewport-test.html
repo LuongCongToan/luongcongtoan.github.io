@@ -49,6 +49,14 @@
     position:absolute; top:60vh; left:0; right:0; text-align:center;
     font:600 16px/1.4 system-ui,sans-serif; color:#5f6872; padding:0 24px;
   }
+  /* Stand-in for the template's #app-swipe, driven by the proposed rule. Translucent and under the panel so the
+     numbers stay readable while it is up — the real one is opaque and covers everything. */
+  #sim{
+    position:fixed; inset:0; z-index:5; background:rgba(120,0,0,.45);
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom:12px;
+    font:700 14px system-ui,sans-serif; color:#ffd9d9; pointer-events:none;
+  }
+  #sim.app-hidden{display:none}
   #ua{position:absolute; top:140vh; left:0; right:0; padding:0 12px; color:#5f6872; word-break:break-all}
 </style>
 </head>
@@ -74,12 +82,17 @@
     <span>safe-area L / R</span><span id="insetlr"></span>
     <span>safe-area T / B</span><span id="insettb"></span>
     <span>requestFullscreen</span><span id="fsresult">not tried</span>
+    <span>OLD rule (0.95)</span><span id="oldrule"></span>
+    <span>NEW rule</span><span class="big" id="newrule"></span>
+    <span>why</span><span id="why"></span>
   </div>
   <div id="verdict"></div>
   <button id="go">Try requestFullscreen()</button>
 </div>
 
-<div id="hint">Rotate to landscape, then swipe up<br>and watch "max innerHeight seen"</div>
+<div id="sim" class="app-hidden">simulated swipe overlay &mdash; swipe up to clear it</div>
+
+<div id="hint">Rotate to landscape, then swipe up<br>and watch "max innerHeight"</div>
 <div id="ua"></div>
 
 <div id="probe" style="position:absolute;top:0;left:0;width:1px;height:100dvh;pointer-events:none;visibility:hidden"></div>
@@ -89,7 +102,15 @@
 
 <script>
 (function () {
+  // Proposed replacement for the template's fixed 0.95 threshold: Chrome for iOS shrinks its omnibox to a 20pt bar and
+  // stops there, so the ratio tops out at 0.949 and the overlay would never clear. Treat "the viewport stopped growing
+  // after the player scrolled" as done too, and bring the overlay back only when the viewport actually shrinks again.
+  var SETTLE_MS = 400;   // no further growth for this long counts as "that is all this browser gives"
+  var SHRINK_PX = 8;     // a drop this big means the toolbar came back
+  var THRESHOLD = 0.95;  // fast path: Safari reaches the full height, so clear the overlay at once
+
   var maxIH = 0;
+  var growthAt = 0;
   var lastLandscape = null;
   var el = function (id) { return document.getElementById(id); };
 
@@ -99,11 +120,13 @@
     var ih = window.innerHeight;
     // Portrait heights are far larger, so a kept maximum would make the landscape ratio meaningless
     var nowLandscape = window.matchMedia("(orientation: landscape)").matches;
+    var now = performance.now();
     if (nowLandscape !== lastLandscape) {
       lastLandscape = nowLandscape;
       maxIH = 0;
+      growthAt = now;
     }
-    if (ih > maxIH) maxIH = ih;
+    if (ih > maxIH) { maxIH = ih; growthAt = now; }
     var ratio = ih / shortSide;
     var maxRatio = maxIH / shortSide;
     var landscape = window.matchMedia("(orientation: landscape)").matches;
@@ -137,17 +160,39 @@
     el("insetlr").textContent = ins.paddingLeft + " / " + ins.paddingRight;
     el("insettb").textContent = ins.paddingTop + " / " + ins.paddingBottom;
 
+    // --- the two rules, side by side ---
+    var oldDone = ih >= shortSide * THRESHOLD;
+    var scrolled = window.scrollY > 0;
+    var sinceGrowth = now - growthAt;
+    var settled = sinceGrowth > SETTLE_MS;
+    var shrunk = ih < maxIH - SHRINK_PX;
+    var newDone = !shrunk && (oldDone || (scrolled && settled));
+    var why = shrunk ? "toolbar came back" :
+              oldDone ? "reached " + THRESHOLD :
+              !scrolled ? "not scrolled yet" :
+              !settled ? "still growing" : "stopped growing";
+
+    el("oldrule").textContent = oldDone ? "hidden" : "STUCK";
+    el("oldrule").className = oldDone ? "ok" : "bad";
+    el("newrule").textContent = newDone ? "hidden" : "showing";
+    el("newrule").className = "big " + (newDone ? "ok" : "warn");
+    el("why").textContent = why + "  (" + Math.round(sinceGrowth) + "ms)";
+
+    el("sim").classList.toggle("app-hidden", !landscape || newDone);
+
     var v = el("verdict");
     if (!landscape) {
       v.textContent = "Rotate to landscape — the game only uses the swipe trick there.";
       v.className = "";
-    } else if (maxRatio >= 0.95) {
-      v.textContent = "This browser CAN reach a full-height viewport. The 0.95 threshold works here.";
+    } else if (newDone && !oldDone) {
+      v.textContent = "The viewport peaks at " + maxRatio.toFixed(3) + ", so the OLD 0.95 rule stays stuck forever — " +
+        "this is the Chrome bug. The NEW rule cleared the overlay because the viewport stopped growing.";
+      v.className = "ok";
+    } else if (newDone) {
+      v.textContent = "Full-height viewport reached (" + maxRatio.toFixed(3) + "). Both rules clear the overlay here.";
       v.className = "ok";
     } else {
-      v.textContent = "After scrolling, the viewport peaks at " + maxRatio.toFixed(3) +
-        " of the screen — below 0.95, so the swipe overlay would never hide. " +
-        "The toolbar does not fully collapse in this browser.";
+      v.textContent = "Overlay still up: " + why + ". Keep swiping up.";
       v.className = "bad";
     }
   }

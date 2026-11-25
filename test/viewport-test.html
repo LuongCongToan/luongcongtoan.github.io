@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#111">
+<title>Viewport Test</title>
+<style>
+  /* Same base as the Applaydu template, so the measurements reflect the real page */
+  html, body {
+    margin:0; padding:0; width:100%;
+    overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none;
+    background:#111; color:#eee;
+    font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  /* Tall + scrollable, exactly like app-swipe-mode */
+  body { min-height:200vh; position:relative; touch-action:pan-y; }
+
+  #panel {
+    position:fixed; inset:0 0 auto 0; z-index:10;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
+    background:rgba(0,0,0,.82); backdrop-filter:blur(6px);
+    border-bottom:1px solid #333;
+  }
+  h1{font:600 14px/1.3 system-ui,sans-serif; margin:0 0 8px}
+  #rows{display:grid; grid-template-columns:max-content 1fr; gap:2px 10px; align-items:baseline}
+  #rows>span:nth-child(odd){color:#8a93a0; white-space:nowrap}
+  #rows>span:nth-child(even){text-align:right; font-variant-numeric:tabular-nums}
+  /* Landscape on a phone is only ~390px tall: two label/value pairs per row so the panel still fits */
+  @media (orientation:landscape){
+    #rows{grid-template-columns:max-content 1fr max-content 1fr; gap:1px 10px}
+    h1{display:none}
+    body{font-size:12px}
+  }
+  .big{font-size:15px; font-weight:700}
+  .ok{color:#6fd49b} .bad{color:#ff8a8a} .warn{color:#ffcc77}
+  #verdict{margin-top:8px; padding:7px 9px; border-radius:6px; font:600 13px/1.35 system-ui,sans-serif}
+  #verdict.ok{background:#15291f} #verdict.bad{background:#2a1618}
+  button{
+    -webkit-appearance:none; appearance:none; margin-top:8px; width:100%;
+    padding:10px; border:1px solid #444; border-radius:6px;
+    background:#1d222b; color:#eee; font:600 13px system-ui,sans-serif;
+  }
+  #hint{
+    position:absolute; top:60vh; left:0; right:0; text-align:center;
+    font:600 16px/1.4 system-ui,sans-serif; color:#5f6872; padding:0 24px;
+  }
+  #ua{position:absolute; top:140vh; left:0; right:0; padding:0 12px; color:#5f6872; word-break:break-all}
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h1>Viewport / toolbar test</h1>
+  <div id="rows">
+    <span>screen (w &times; h)</span><span id="screen"></span>
+    <span>shortSide</span><span id="short"></span>
+    <span>innerHeight</span><span class="big" id="ih"></span>
+    <span>max innerHeight</span><span class="big" id="maxih"></span>
+    <span>ih / shortSide</span><span class="big" id="ratio"></span>
+    <span>needs &ge; 0.95</span><span id="pass"></span>
+    <span>visualViewport h</span><span id="vv"></span>
+    <span>100dvh resolves to</span><span id="dvh"></span>
+    <span>scrollY / max</span><span id="scroll"></span>
+    <span>fullscreenEnabled</span><span id="fs"></span>
+    <span>webkitFullscreenEnabled</span><span id="wfs"></span>
+    <span>standalone</span><span id="standalone"></span>
+    <span>orientation</span><span id="orient"></span>
+  </div>
+  <div id="verdict"></div>
+  <button id="go">Try requestFullscreen()</button>
+</div>
+
+<div id="hint">Rotate to landscape, then swipe up<br>and watch "max innerHeight seen"</div>
+<div id="ua"></div>
+
+<div id="probe" style="position:absolute;top:0;left:0;width:1px;height:100dvh;pointer-events:none;visibility:hidden"></div>
+
+<script>
+(function () {
+  var maxIH = 0;
+  var el = function (id) { return document.getElementById(id); };
+
+  function update() {
+    var sw = screen.width, sh = screen.height;
+    var shortSide = Math.min(sw, sh);
+    var ih = window.innerHeight;
+    if (ih > maxIH) maxIH = ih;
+    var ratio = ih / shortSide;
+    var maxRatio = maxIH / shortSide;
+    var landscape = window.matchMedia("(orientation: landscape)").matches;
+
+    el("screen").textContent = sw + " × " + sh;
+    el("short").textContent = shortSide;
+    el("ih").textContent = ih;
+    el("maxih").textContent = maxIH + "  (" + maxRatio.toFixed(3) + ")";
+    el("ratio").textContent = ratio.toFixed(3);
+    el("ratio").className = "big " + (ratio >= 0.95 ? "ok" : "bad");
+    el("pass").textContent = ratio >= 0.95 ? "PASS" : "fail";
+    el("pass").className = ratio >= 0.95 ? "ok" : "bad";
+    el("vv").textContent = window.visualViewport ? Math.round(window.visualViewport.height) : "n/a";
+    el("dvh").textContent = el("probe").offsetHeight + "px";
+    el("scroll").textContent = Math.round(window.scrollY) + " / " +
+      (document.documentElement.scrollHeight - ih);
+    el("fs").textContent = String(document.fullscreenEnabled);
+    el("fs").className = document.fullscreenEnabled ? "ok" : "bad";
+    el("wfs").textContent = String(!!document.webkitFullscreenEnabled);
+    el("wfs").className = document.webkitFullscreenEnabled ? "ok" : "bad";
+    el("standalone").textContent = String(navigator.standalone === true ||
+      window.matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches);
+    el("orient").textContent = landscape ? "landscape" : "portrait";
+
+    var v = el("verdict");
+    if (!landscape) {
+      v.textContent = "Rotate to landscape — the game only uses the swipe trick there.";
+      v.className = "";
+    } else if (maxRatio >= 0.95) {
+      v.textContent = "This browser CAN reach a full-height viewport. The 0.95 threshold works here.";
+      v.className = "ok";
+    } else {
+      v.textContent = "After scrolling, the viewport peaks at " + maxRatio.toFixed(3) +
+        " of the screen — below 0.95, so the swipe overlay would never hide. " +
+        "The toolbar does not fully collapse in this browser.";
+      v.className = "bad";
+    }
+  }
+
+  el("go").addEventListener("click", function () {
+    var target = document.documentElement;
+    try {
+      var r = target.requestFullscreen ? target.requestFullscreen({ navigationUI: "hide" })
+            : target.webkitRequestFullscreen ? target.webkitRequestFullscreen()
+            : null;
+      if (!r) { alert("No requestFullscreen on this browser"); return; }
+      if (r.then) r.then(function () { alert("Fullscreen OK"); }, function (e) { alert("Rejected: " + e); });
+    } catch (e) {
+      alert("Threw: " + e);
+    }
+  });
+
+  el("ua").textContent = navigator.userAgent;
+
+  addEventListener("scroll", update, { passive: true });
+  addEventListener("resize", update);
+  addEventListener("orientationchange", update);
+  if (window.visualViewport) {
+    visualViewport.addEventListener("resize", update);
+    visualViewport.addEventListener("scroll", update);
+  }
+  setInterval(update, 250);
+  update();
+})();
+</script>
+</body>
+</html>

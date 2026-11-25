@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#111">
+<!-- Candidate fix for Chrome iOS' white strips beside the notch: it paints them with its own background, not the
+     page's, so declaring the scheme is the only lever the page has over that colour. Remove to compare. -->
+<meta name="color-scheme" content="dark">
 <title>Viewport Test</title>
 <style>
   /* Same base as the Applaydu template, so the measurements reflect the real page */
@@ -67,6 +70,9 @@
     <span>webkitFullscreenEnabled</span><span id="wfs"></span>
     <span>standalone</span><span id="standalone"></span>
     <span>orientation</span><span id="orient"></span>
+    <span>innerWidth / longSide</span><span class="big" id="wratio"></span>
+    <span>safe-area L / R</span><span id="insetlr"></span>
+    <span>safe-area T / B</span><span id="insettb"></span>
     <span>requestFullscreen</span><span id="fsresult">not tried</span>
   </div>
   <div id="verdict"></div>
@@ -77,6 +83,9 @@
 <div id="ua"></div>
 
 <div id="probe" style="position:absolute;top:0;left:0;width:1px;height:100dvh;pointer-events:none;visibility:hidden"></div>
+<!-- The insets are read as padding: env() is not readable from script any other way -->
+<div id="inset" style="position:absolute;top:0;left:0;width:1px;height:1px;pointer-events:none;visibility:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)"></div>
 
 <script>
 (function () {
@@ -118,6 +127,15 @@
     el("standalone").textContent = String(navigator.standalone === true ||
       window.matchMedia("(display-mode: standalone), (display-mode: fullscreen)").matches);
     el("orient").textContent = landscape ? "landscape" : "portrait";
+
+    // Chrome for iOS keeps the content inside the safe area in landscape, so the page is narrower than the screen
+    var longSide = Math.max(sw, sh);
+    var wr = window.innerWidth / longSide;
+    el("wratio").textContent = window.innerWidth + " / " + longSide + "  (" + wr.toFixed(3) + ")";
+    el("wratio").className = "big " + (!landscape || wr >= 0.99 ? "ok" : "bad");
+    var ins = getComputedStyle(el("inset"));
+    el("insetlr").textContent = ins.paddingLeft + " / " + ins.paddingRight;
+    el("insettb").textContent = ins.paddingTop + " / " + ins.paddingBottom;
 
     var v = el("verdict");
     if (!landscape) {

@@ -67,6 +67,7 @@
     <span>webkitFullscreenEnabled</span><span id="wfs"></span>
     <span>standalone</span><span id="standalone"></span>
     <span>orientation</span><span id="orient"></span>
+    <span>requestFullscreen</span><span id="fsresult">not tried</span>
   </div>
   <div id="verdict"></div>
   <button id="go">Try requestFullscreen()</button>
@@ -80,12 +81,19 @@
 <script>
 (function () {
   var maxIH = 0;
+  var lastLandscape = null;
   var el = function (id) { return document.getElementById(id); };
 
   function update() {
     var sw = screen.width, sh = screen.height;
     var shortSide = Math.min(sw, sh);
     var ih = window.innerHeight;
+    // Portrait heights are far larger, so a kept maximum would make the landscape ratio meaningless
+    var nowLandscape = window.matchMedia("(orientation: landscape)").matches;
+    if (nowLandscape !== lastLandscape) {
+      lastLandscape = nowLandscape;
+      maxIH = 0;
+    }
     if (ih > maxIH) maxIH = ih;
     var ratio = ih / shortSide;
     var maxRatio = maxIH / shortSide;
@@ -126,16 +134,26 @@
     }
   }
 
+  // No alert(): a native dialog brings the browser toolbars back and resets the scroll, which ruins the measurement
+  function say(text, cls) {
+    var out = el("fsresult");
+    out.textContent = text;
+    out.className = cls || "";
+  }
+
   el("go").addEventListener("click", function () {
     var target = document.documentElement;
     try {
       var r = target.requestFullscreen ? target.requestFullscreen({ navigationUI: "hide" })
             : target.webkitRequestFullscreen ? target.webkitRequestFullscreen()
             : null;
-      if (!r) { alert("No requestFullscreen on this browser"); return; }
-      if (r.then) r.then(function () { alert("Fullscreen OK"); }, function (e) { alert("Rejected: " + e); });
+      if (!r) { say("no requestFullscreen on this browser", "bad"); return; }
+      say("called, waiting…", "warn");
+      if (r.then) r.then(function () { say("fullscreen OK", "ok"); },
+                         function (e) { say("rejected: " + (e && e.name || e), "bad"); });
+      else say("called (no promise returned)", "warn");
     } catch (e) {
-      alert("Threw: " + e);
+      say("threw: " + (e && e.name || e), "bad");
     }
   });
 
